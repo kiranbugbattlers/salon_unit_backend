@@ -1,0 +1,816 @@
+{
+	"info": {
+		"_postman_id": "due-payment-api-collection",
+		"name": "Due Payment API - Style Unit Backend",
+		"description": "Complete collection for testing Due Payment APIs with authentication and example data",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{jwt_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000/api/v1",
+			"type": "string"
+		},
+		{
+			"key": "jwt_token",
+			"value": "your-admin-jwt-token-here",
+			"type": "string"
+		},
+		{
+			"key": "business_owner_id",
+			"value": "456e7890-e12b-34c5-d678-901234567890",
+			"type": "string"
+		},
+		{
+			"key": "due_payment_id",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "📊 Due Payments Management",
+			"item": [
+				{
+					"name": "1. Get All Due Payments",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has success property\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('success', true);",
+									"});",
+									"",
+									"pm.test(\"Response has due payments array\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('duePayments');",
+									"    pm.expect(jsonData.data.duePayments).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/due-payments?page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "due-payments"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number for pagination"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Number of items per page"
+								}
+							]
+						},
+						"description": "Get all due payments with pagination"
+					},
+					"response": []
+				},
+				{
+					"name": "2. Get Pending Payments Only",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"All payments have pending status\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    const payments = jsonData.data.duePayments;",
+									"    payments.forEach(payment => {",
+									"        pm.expect(payment.status).to.eql('pending');",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/due-payments?status=pending&sortBy=dueDate&sortOrder=ASC",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "due-payments"],
+							"query": [
+								{
+									"key": "status",
+									"value": "pending",
+									"description": "Filter by payment status"
+								},
+								{
+									"key": "sortBy",
+									"value": "dueDate",
+									"description": "Sort by due date"
+								},
+								{
+									"key": "sortOrder",
+									"value": "ASC",
+									"description": "Sort order"
+								}
+							]
+						},
+						"description": "Get only pending payments sorted by due date"
+					},
+					"response": []
+				},
+				{
+					"name": "3. Get Overdue Payments",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"All payments have overdue status\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    const payments = jsonData.data.duePayments;",
+									"    payments.forEach(payment => {",
+									"        pm.expect(payment.status).to.eql('overdue');",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/due-payments?status=overdue&sortBy=dueAmount&sortOrder=DESC",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "due-payments"],
+							"query": [
+								{
+									"key": "status",
+									"value": "overdue",
+									"description": "Filter by overdue status"
+								},
+								{
+									"key": "sortBy",
+									"value": "dueAmount",
+									"description": "Sort by due amount (highest first)"
+								},
+								{
+									"key": "sortOrder",
+									"value": "DESC",
+									"description": "Descending order"
+								}
+							]
+						},
+						"description": "Get overdue payments sorted by highest amount first"
+					},
+					"response": []
+				},
+				{
+					"name": "4. Get Payments by Date Range",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Payments are within date range\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    const payments = jsonData.data.duePayments;",
+									"    const fromDate = new Date('2024-01-01');",
+									"    const toDate = new Date('2024-01-31');",
+									"    ",
+									"    payments.forEach(payment => {",
+									"        const dueDate = new Date(payment.dueDate);",
+									"        pm.expect(dueDate).to.be.at.least(fromDate);",
+									"        pm.expect(dueDate).to.be.at.most(toDate);",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/due-payments?fromDate=2024-01-01&toDate=2024-01-31",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "due-payments"],
+							"query": [
+								{
+									"key": "fromDate",
+									"value": "2024-01-01",
+									"description": "Start date (YYYY-MM-DD)"
+								},
+								{
+									"key": "toDate",
+									"value": "2024-01-31",
+									"description": "End date (YYYY-MM-DD)"
+								}
+							]
+						},
+						"description": "Get payments within a specific date range"
+					},
+					"response": []
+				},
+				{
+					"name": "5. Get Due Payments Summary",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has summary statistics\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('totalRecords');",
+									"    pm.expect(jsonData.data).to.have.property('totalDueAmount');",
+									"    pm.expect(jsonData.data).to.have.property('statusBreakdown');",
+									"    pm.expect(jsonData.data).to.have.property('businessStatusBreakdown');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/due-payments/summary",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "due-payments", "summary"]
+						},
+						"description": "Get comprehensive summary statistics for due payments"
+					},
+					"response": []
+				},
+				{
+					"name": "6. Get Specific Due Payment Details",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has payment details\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('id');",
+									"    pm.expect(jsonData.data).to.have.property('businessName');",
+									"    pm.expect(jsonData.data).to.have.property('dueAmount');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/due-payments/{{due_payment_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "due-payments", "{{due_payment_id}}"]
+						},
+						"description": "Get detailed information about a specific due payment. Set the due_payment_id variable first."
+					},
+					"response": []
+				},
+				{
+					"name": "7. Create New Due Payment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Payment created successfully\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('success', true);",
+									"    pm.expect(jsonData.data).to.have.property('id');",
+									"    pm.expect(jsonData.data.status).to.eql('pending');",
+									"    ",
+									"    // Store the created payment ID for later tests",
+									"    pm.collectionVariables.set('due_payment_id', jsonData.data.id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"businessOwnerId\": \"{{business_owner_id}}\",\n    \"dueAmount\": 1500.00,\n    \"dueDate\": \"2024-02-15\",\n    \"description\": \"Monthly commission payment for January 2024\",\n    \"adminRemarks\": \"Test payment created via Postman\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/due-payments",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "due-payments"]
+						},
+						"description": "Create a new due payment record"
+					},
+					"response": []
+				},
+				{
+					"name": "8. Update Payment as Partially Paid",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Payment updated as partially paid\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('success', true);",
+									"    pm.expect(jsonData.data.status).to.eql('partially_paid');",
+									"    pm.expect(jsonData.data.paidAmount).to.eql(750.00);",
+									"    pm.expect(jsonData.data.remainingAmount).to.eql(750.00);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"paidAmount\": 750.00,\n    \"status\": \"partially_paid\",\n    \"adminRemarks\": \"Partial payment received via bank transfer - Transaction ID: TXN123456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/due-payments/{{due_payment_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "due-payments", "{{due_payment_id}}"]
+						},
+						"description": "Update a payment as partially paid. Make sure due_payment_id is set from the create payment response."
+					},
+					"response": []
+				},
+				{
+					"name": "9. Update Payment as Fully Paid",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Payment updated as fully paid\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('success', true);",
+									"    pm.expect(jsonData.data.status).to.eql('paid');",
+									"    pm.expect(jsonData.data.paidAmount).to.eql(1500.00);",
+									"    pm.expect(jsonData.data.remainingAmount).to.eql(0.00);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"paidAmount\": 1500.00,\n    \"status\": \"paid\",\n    \"adminRemarks\": \"Full payment received via bank transfer - Transaction ID: TXN789012\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/due-payments/{{due_payment_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "due-payments", "{{due_payment_id}}"]
+						},
+						"description": "Update a payment as fully paid. Use this after partial payment or directly for full payment."
+					},
+					"response": []
+				},
+				{
+					"name": "10. Check Overdue Payments",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Overdue check completed\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('success', true);",
+									"    pm.expect(jsonData.data).to.have.property('newlyMarkedOverdue');",
+									"    pm.expect(jsonData.data).to.have.property('totalOverduePayments');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/due-payments/check-overdue",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "due-payments", "check-overdue"]
+						},
+						"description": "Automatically mark pending payments as overdue if their due date has passed"
+					},
+					"response": []
+				}
+			],
+			"description": "Complete due payment management operations",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "🧪 Test Scenarios",
+			"item": [
+				{
+					"name": "Complete Payment Workflow Test",
+					"item": [
+						{
+							"name": "Step 1: Create Payment",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Payment created successfully\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    if(jsonData.success) {",
+											"        pm.collectionVariables.set('workflow_payment_id', jsonData.data.id);",
+											"        console.log('Payment ID stored:', jsonData.data.id);",
+											"    }",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"businessOwnerId\": \"{{business_owner_id}}\",\n    \"dueAmount\": 2000.00,\n    \"dueDate\": \"2024-02-20\",\n    \"description\": \"Workflow test payment\",\n    \"adminRemarks\": \"Created for workflow testing\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/admin/due-payments",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "due-payments"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Step 2: Verify Created Payment",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/admin/due-payments/{{workflow_payment_id}}",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "due-payments", "{{workflow_payment_id}}"]
+								},
+								"description": "Verify the payment was created with correct details"
+							},
+							"response": []
+						},
+						{
+							"name": "Step 3: Partial Payment",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Partial payment processed\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.success).to.be.true;",
+											"    pm.expect(jsonData.data.status).to.eql('partially_paid');",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"paidAmount\": 1000.00,\n    \"status\": \"partially_paid\",\n    \"adminRemarks\": \"First installment received\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/admin/due-payments/{{workflow_payment_id}}",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "due-payments", "{{workflow_payment_id}}"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Step 4: Final Payment",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Final payment completed\", function () {",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.success).to.be.true;",
+											"    pm.expect(jsonData.data.status).to.eql('paid');",
+											"    pm.expect(jsonData.data.remainingAmount).to.eql(0.00);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"paidAmount\": 2000.00,\n    \"status\": \"paid\",\n    \"adminRemarks\": \"Final payment received - payment completed\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/admin/due-payments/{{workflow_payment_id}}",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "due-payments", "{{workflow_payment_id}}"]
+								}
+							},
+							"response": []
+						}
+					],
+					"description": "Test complete payment lifecycle from creation to completion"
+				},
+				{
+					"name": "Error Handling Tests",
+					"item": [
+						{
+							"name": "Test Invalid Payment ID",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Returns 404 for invalid ID\", function () {",
+											"    pm.response.to.have.status(404);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/admin/due-payments/invalid-payment-id",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "due-payments", "invalid-payment-id"]
+								},
+								"description": "Test with invalid payment ID"
+							},
+							"response": []
+						},
+						{
+							"name": "Test Invalid Business Owner",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Returns 400 for invalid business owner\", function () {",
+											"    pm.response.to.have.status(400);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"businessOwnerId\": \"invalid-business-owner-id\",\n    \"dueAmount\": 1000.00,\n    \"dueDate\": \"2024-02-15\",\n    \"description\": \"Test with invalid business owner\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/admin/due-payments",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "due-payments"]
+								},
+								"description": "Test payment creation with invalid business owner ID"
+							},
+							"response": []
+						},
+						{
+							"name": "Test Missing Required Fields",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Returns 400 for missing fields\", function () {",
+											"    pm.response.to.have.status(400);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"description\": \"Missing required fields\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/admin/due-payments",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "due-payments"]
+								},
+								"description": "Test payment creation with missing required fields"
+							},
+							"response": []
+						}
+					],
+					"description": "Test error handling and validation"
+				}
+			],
+			"description": "Predefined test scenarios for comprehensive API testing"
+		},
+		{
+			"name": "📋 Setup & Variables",
+			"item": [
+				{
+					"name": "Set Environment Variables",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Set your actual JWT token here",
+									"// pm.collectionVariables.set('jwt_token', 'your-actual-jwt-token-here');",
+									"// ",
+									"// Set your actual business owner ID here",
+									"// pm.collectionVariables.set('business_owner_id', 'your-actual-business-owner-id');",
+									"",
+									"console.log('Current variables:');",
+									"console.log('Base URL:', pm.collectionVariables.get('base_url'));",
+									"console.log('JWT Token:', pm.collectionVariables.get('jwt_token'));",
+									"console.log('Business Owner ID:', pm.collectionVariables.get('business_owner_id'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/due-payments/summary",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "due-payments", "summary"]
+						},
+						"description": "Use this to set up your environment variables before testing"
+					},
+					"response": []
+				}
+			],
+			"description": "Setup and configuration for testing"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}

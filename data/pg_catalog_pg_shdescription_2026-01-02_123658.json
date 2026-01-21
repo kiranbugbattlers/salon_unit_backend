@@ -1,0 +1,4 @@
+[
+  {"objoid":1,"classoid":1262,"description":"default template for new databases"},
+  {"objoid":4,"classoid":1262,"description":"unmodifiable empty database"},
+  {"objoid":5,"classoid":1262,"description":"default administrative connection database"}]

@@ -1,0 +1,278 @@
+{
+  "info": {
+    "name": "Salon Backend - S3 Integration Tests",
+    "description": "Test collection for S3 profile picture and business media upload endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "customer_jwt",
+      "value": "YOUR_CUSTOMER_JWT_TOKEN_HERE"
+    },
+    {
+      "key": "business_owner_jwt", 
+      "value": "YOUR_BUSINESS_OWNER_JWT_TOKEN_HERE"
+    }
+  ],
+  "item": [
+    {
+      "name": "Customer Profile Picture",
+      "item": [
+        {
+          "name": "Upload Customer Profile Picture",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_jwt}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/path/to/your/image.jpg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/customer/profile-picture",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "profile-picture"]
+            }
+          }
+        },
+        {
+          "name": "Get Customer Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_jwt}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/profile",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Delete Customer Profile Picture",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_jwt}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/profile-picture",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "profile-picture"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Business Owner Profile Picture",
+      "item": [
+        {
+          "name": "Upload Business Owner Profile Picture",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{business_owner_jwt}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/path/to/your/image.jpg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/business-owner/profile-picture",
+              "host": ["{{base_url}}"],
+              "path": ["business-owner", "profile-picture"]
+            }
+          }
+        },
+        {
+          "name": "Get Business Owner Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{business_owner_jwt}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/business-owner/profile",
+              "host": ["{{base_url}}"],
+              "path": ["business-owner", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Delete Business Owner Profile Picture",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{business_owner_jwt}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/business-owner/profile-picture",
+              "host": ["{{base_url}}"],
+              "path": ["business-owner", "profile-picture"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Business Owner Business Media",
+      "item": [
+        {
+          "name": "Upload Business Media",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{business_owner_jwt}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": "/path/to/portfolio1.jpg"
+                },
+                {
+                  "key": "files",
+                  "type": "file", 
+                  "src": "/path/to/portfolio2.jpg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/business-owner/business-media",
+              "host": ["{{base_url}}"],
+              "path": ["business-owner", "business-media"]
+            }
+          }
+        },
+        {
+          "name": "Get Business Media",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{business_owner_jwt}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/business-owner/business-media",
+              "host": ["{{base_url}}"],
+              "path": ["business-owner", "business-media"]
+            }
+          }
+        },
+        {
+          "name": "Delete Business Media",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{business_owner_jwt}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/business-owner/business-media/:mediaId",
+              "host": ["{{base_url}}"],
+              "path": ["business-owner", "business-media", ":mediaId"],
+              "variable": [
+                {
+                  "key": "mediaId",
+                  "value": "REPLACE_WITH_MEDIA_ID"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Business Owner Profile Tests",
+      "item": [
+        {
+          "name": "Get Business Owner Profile (Updated - Single Address)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{business_owner_jwt}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/business-owner/profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "business-owner", "profile"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Customer Profile Tests",
+      "item": [
+        {
+          "name": "Get Customer Profile (For Comparison)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_jwt}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/customer/profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "customer", "profile"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

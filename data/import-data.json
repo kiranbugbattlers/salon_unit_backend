@@ -1,0 +1,39 @@
+{
+  "users": [
+    {
+      "id": "uuid-here-1",
+      "mobile": "9876543210",
+      "role": "customer",
+      "name": "John Doe",
+      "isPremium": false,
+      "referralCode": "JOHN123",
+      "createdAt": "2024-01-01T00:00:00Z",
+      "updatedAt": "2024-01-01T00:00:00Z"
+    }
+  ],
+  "customers": [
+    {
+      "id": "customer-uuid-1",
+      "userId": "uuid-here-1",
+      "personName": "John Doe",
+      "mobile": "9876543210",
+      "email": "john@example.com",
+      "percentageCompleted": 100,
+      "createdAt": "2024-01-01T00:00:00Z",
+      "updatedAt": "2024-01-01T00:00:00Z"
+    }
+  ],
+  "businessOwners": [
+    {
+      "id": "business-uuid-1",
+      "userId": "uuid-here-2",
+      "firmName": "John's Salon",
+      "personName": "John Smith",
+      "mobile": "9876543211",
+      "email": "john@salon.com",
+      "percentageCompleted": 100,
+      "createdAt": "2024-01-01T00:00:00Z",
+      "updatedAt": "2024-01-01T00:00:00Z"
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+### Review System Test Endpoints
+### Use with VS Code REST Client extension or curl
+### All endpoints require the global prefix: /api/v1
+
+### 1. Customer - Create Review
+POST http://localhost:3000/api/v1/customer/reviews
+Authorization: Bearer YOUR_CUSTOMER_JWT_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "bookingId": "YOUR_BOOKING_ID_HERE",
+  "rating": 5,
+  "comment": "Excellent service! Very professional and friendly staff."
+}
+
+### 2. Customer - Get My Reviews
+GET http://localhost:3000/api/v1/customer/reviews/my-reviews
+Authorization: Bearer YOUR_CUSTOMER_JWT_TOKEN_HERE
+
+### 3. Customer - Get Specific Review
+GET http://localhost:3000/api/v1/customer/reviews/REVIEW_ID_HERE
+Authorization: Bearer YOUR_CUSTOMER_JWT_TOKEN_HERE
+
+### 4. Customer - Update Review
+PUT http://localhost:3000/api/v1/customer/reviews/REVIEW_ID_HERE
+Authorization: Bearer YOUR_CUSTOMER_JWT_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "rating": 4,
+  "comment": "Good service, but could improve on timing."
+}
+
+### 5. Customer - Delete Review
+DELETE http://localhost:3000/api/v1/customer/reviews/REVIEW_ID_HERE
+Authorization: Bearer YOUR_CUSTOMER_JWT_TOKEN_HERE
+
+### 6. Business Owner - Get My Business Reviews
+GET http://localhost:3000/api/v1/business-owner/reviews/my-reviews
+Authorization: Bearer YOUR_BUSINESS_OWNER_JWT_TOKEN_HERE
+
+### 7. Business Owner - Get Specific Review
+GET http://localhost:3000/api/v1/business-owner/reviews/REVIEW_ID_HERE
+Authorization: Bearer YOUR_BUSINESS_OWNER_JWT_TOKEN_HERE
+
+### 8. Business Owner - Approve/Disapprove Review
+PUT http://localhost:3000/api/v1/business-owner/reviews/REVIEW_ID_HERE/approve
+Authorization: Bearer YOUR_BUSINESS_OWNER_JWT_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "isApproved": true
+}
+
+### 9. Business Owner - Delete Review
+DELETE http://localhost:3000/api/v1/business-owner/reviews/REVIEW_ID_HERE
+Authorization: Bearer YOUR_BUSINESS_OWNER_JWT_TOKEN_HERE
+
+### 10. Admin - Get All Reviews
+GET http://localhost:3000/api/v1/admin/reviews
+Authorization: Bearer YOUR_ADMIN_JWT_TOKEN_HERE
+
+### 11. Admin - Get All Reviews with Filters
+GET http://localhost:3000/api/v1/admin/reviews?rating=5&isApproved=true&page=1&limit=10
+Authorization: Bearer YOUR_ADMIN_JWT_TOKEN_HERE
+
+### 12. Admin - Get Review by ID
+GET http://localhost:3000/api/v1/admin/reviews/REVIEW_ID_HERE
+Authorization: Bearer YOUR_ADMIN_JWT_TOKEN_HERE
+
+### 13. Admin - Update Any Review
+PUT http://localhost:3000/api/v1/admin/reviews/REVIEW_ID_HERE
+Authorization: Bearer YOUR_ADMIN_JWT_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "rating": 5,
+  "comment": "Updated comment by admin",
+  "isApproved": true
+}
+
+### 14. Admin - Delete Any Review
+DELETE http://localhost:3000/api/v1/admin/reviews/REVIEW_ID_HERE
+Authorization: Bearer YOUR_ADMIN_JWT_TOKEN_HERE
+
+### 15. Admin - Get Reviews by Business Owner
+GET http://localhost:3000/api/v1/admin/reviews/business/BUSINESS_OWNER_ID_HERE
+Authorization: Bearer YOUR_ADMIN_JWT_TOKEN_HERE
+
+### 16. Admin - Get Reviews by Customer
+GET http://localhost:3000/api/v1/admin/reviews/customer/CUSTOMER_ID_HERE
+Authorization: Bearer YOUR_ADMIN_JWT_TOKEN_HERE
+
+### 17. Test with Query Parameters - Customer Reviews with Rating Filter
+GET http://localhost:3000/api/v1/customer/reviews/my-reviews?rating=5&page=1&limit=5
+Authorization: Bearer YOUR_CUSTOMER_JWT_TOKEN_HERE
+
+### 18. Test with Query Parameters - Business Owner Reviews with Approval Filter
+GET http://localhost:3000/api/v1/business-owner/reviews/my-reviews?isApproved=false&page=1&limit=10
+Authorization: Bearer YOUR_BUSINESS_OWNER_JWT_TOKEN_HERE
+
+### 19. Test with Query Parameters - Admin Reviews with Multiple Filters
+GET http://localhost:3000/api/v1/admin/reviews?businessOwnerId=BUSINESS_OWNER_ID_HERE&rating=4&isApproved=true&page=1&limit=20
+Authorization: Bearer YOUR_ADMIN_JWT_TOKEN_HERE
+
+### 20. Test Pagination - Admin Reviews
+GET http://localhost:3000/api/v1/admin/reviews?page=2&limit=5
+Authorization: Bearer YOUR_ADMIN_JWT_TOKEN_HERE

@@ -1,0 +1,31 @@
+import { Booking } from './booking.entity';
+import { BusinessService } from './business-service.entity';
+import { Service } from './service.entity';
+import { Staff } from './staff.entity';
+import { ServicePackage } from './service-package.entity';
+export declare class BookingService {
+    id: string;
+    bookingId: string;
+    businessServiceId: string;
+    serviceId: string;
+    serviceName: string;
+    price: number;
+    servicePrice: number;
+    durationMinutes: number;
+    serviceDuration: number;
+    isAddOn: boolean;
+    addedAt?: Date;
+    addedByStaffId?: string;
+    customerApproved: boolean;
+    approvedAt?: Date;
+    rejectedAt?: Date;
+    packageId?: string;
+    packageName?: string;
+    createdAt: Date;
+    updatedAt: Date;
+    booking: Booking;
+    businessService: BusinessService;
+    service: Service;
+    addedByStaff?: Staff;
+    package?: ServicePackage;
+}

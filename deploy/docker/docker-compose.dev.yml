@@ -1,0 +1,22 @@
+# Development-specific Docker Compose configuration
+version: '3.8'
+
+services:
+  backend-dev:
+    environment:
+      - NODE_ENV=development
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: ["node", "dist/main"]
+
+  postgres:
+    environment:
+      - POSTGRES_DB=salon_backend_dev
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_dev_data:

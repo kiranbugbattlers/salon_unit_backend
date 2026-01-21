@@ -1,0 +1,34 @@
+import { User } from './user.entity';
+import { Admin } from './admin.entity';
+import { BusinessApproval } from './business-approval.entity';
+export declare class Agent {
+    id: string;
+    userId: string;
+    user: User;
+    createdByAdminId: string;
+    createdByAdmin: Admin;
+    username: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    gender: string;
+    dateOfBirth: Date;
+    employeeId: string;
+    department: string;
+    position: string;
+    hireDate: Date;
+    salary: number;
+    isActive: boolean;
+    lastLogin: Date;
+    permissions: Record<string, any>;
+    notes: string;
+    latitude: number;
+    longitude: number;
+    locationAddress: string;
+    createdAt: Date;
+    updatedAt: Date;
+    assignedApprovals: BusinessApproval[];
+    hashPassword(): Promise<void>;
+    validatePassword(password: string): Promise<boolean>;
+    get fullName(): string;
+}

@@ -1,0 +1,93 @@
+### Create Test Bookings for Review Testing
+### Use this file with VS Code REST Client extension
+### Replace YOUR_JWT_TOKEN with the actual token from your login
+
+### 1. Create a Business Owner (Admin only - skip for now)
+# POST https://api.styleplusunit.com/api/v1/admin/business-owners
+# Authorization: Bearer YOUR_ADMIN_JWT_TOKEN
+# Content-Type: application/json
+# {
+#   "businessName": "Test Salon",
+#   "email": "test@salon.com",
+#   "phone": "9876543210",
+#   "firstName": "Test",
+#   "lastName": "Owner"
+# }
+
+### 2. Get available services (to find service IDs)
+GET https://api.styleplusunit.com/api/v1/services
+
+### 3. Create Booking Request (as customer)
+POST https://api.styleplusunit.com/api/v1/booking-requests
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwNTZiMTQxNy1mZDFhLTQzYzEtYWNjMS00Mzk1MzA3ZDY1NmYiLCJwaG9uZSI6IjkzNTkzNzExODAiLCJyb2xlcyI6WyJidXNpbmVzc19vd25lciIsImN1c3RvbWVyIl0sImlhdCI6MTc2NzM1ODQ1NCwiZXhwIjoxNzY5OTUwNDU0fQ.9DgIYEjcSkVLNEfNZg771PQFb2u6JJC1Da5Yh5hUeYs
+Content-Type: application/json
+
+{
+  "businessOwnerId": "business-owner-uuid-1",
+  "requestedDate": "2026-01-01",
+  "preferredStartTime": "10:00",
+  "services": [
+    {
+      "serviceId": "service-uuid-1",
+      "quantity": 1
+    }
+  ],
+  "serviceLocation": "in-salon"
+}
+
+### 4. Alternative: Direct SQL Insert (if you have database access)
+### Run this SQL directly in your database:
+/*
+-- First, get customer ID
+SELECT id FROM customers WHERE user_id = '056b1417-fd1a-43c1-acc1-4395307d656f';
+
+-- Insert test booking
+INSERT INTO bookings (
+    id,
+    customer_id,
+    business_owner_id,
+    staff_id,
+    service_id,
+    appointment_date,
+    start_time,
+    end_time,
+    service_location,
+    total_amount,
+    status,
+    otp_code,
+    payment_completed,
+    created_at,
+    updated_at
+) VALUES (
+    'booking-uuid-1',
+    'CUSTOMER_ID_FROM_ABOVE',
+    'business-owner-uuid-1',
+    'staff-uuid-1',
+    'service-uuid-1',
+    '2026-01-01',
+    '10:00:00',
+    '10:30:00',
+    'in-salon',
+    500.00,
+    'completed',
+    '123456',
+    true,
+    NOW(),
+    NOW()
+);
+*/
+
+### 5. Test Review Creation (after booking exists)
+POST https://api.styleplusunit.com/api/v1/customer/reviews
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwNTZiMTQxNy1mZDFhLTQzYzEtYWNjMS00Mzk1MzA3ZDY1NmYiLCJwaG9uZSI6IjkzNTkzNzExODAiLCJyb2xlcyI6WyJidXNpbmVzc19vd25lciIsImN1c3RvbWVyIl0sImlhdCI6MTc2NzM1ODQ1NCwiZXhwIjoxNzY5OTUwNDU0fQ.9DgIYEjcSkVLNEfNZg771PQFb2u6JJC1Da5Yh5hUeYs
+Content-Type: application/json
+
+{
+  "bookingId": "booking-uuid-1",
+  "rating": 5,
+  "comment": "Excellent service! Very professional and friendly staff."
+}
+
+### 6. Get Customer Reviews
+GET https://api.styleplusunit.com/api/v1/customer/reviews/my-reviews
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwNTZiMTQxNy1mZDFhLTQzYzEtYWNjMS00Mzk1MzA3ZDY1NmYiLCJwaG9uZSI6IjkzNTkzNzExODAiLCJyb2xlcyI6WyJidXNpbmVzc19vd25lciIsImN1c3RvbWVyIl0sImlhdCI6MTc2NzM1ODQ1NCwiZXhwIjoxNzY5OTUwNDU0fQ.9DgIYEjcSkVLNEfNZg771PQFb2u6JJC1Da5Yh5hUeYs

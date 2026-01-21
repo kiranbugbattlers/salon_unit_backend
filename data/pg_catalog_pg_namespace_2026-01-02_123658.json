@@ -1,0 +1,5 @@
+[
+  {"oid":99,"nspname":"pg_toast","nspowner":10,"nspacl":null},
+  {"oid":11,"nspname":"pg_catalog","nspowner":10,"nspacl":"{salon_user=UC/salon_user,=U/salon_user}"},
+  {"oid":13270,"nspname":"information_schema","nspowner":10,"nspacl":"{salon_user=UC/salon_user,=U/salon_user}"},
+  {"oid":22125,"nspname":"public","nspowner":10,"nspacl":null}]

@@ -1,0 +1,85 @@
+### S3 Integration Test Endpoints
+### Use with VS Code REST Client extension or curl
+
+### 1. Customer Profile Picture Upload
+POST http://localhost:3000/customer/profile-picture
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="profile.jpg"
+Content-Type: image/jpeg
+
+< ./path/to/your/image.jpg
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### 2. Get Customer Profile (should include profile picture URLs)
+GET http://localhost:3000/customer/profile
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+### 3. Business Owner Profile Picture Upload  
+POST http://localhost:3000/business-owner/profile-picture
+Authorization: Bearer YOUR_BUSINESS_OWNER_JWT_TOKEN_HERE
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="business-owner-profile.jpg"
+Content-Type: image/jpeg
+
+< ./path/to/your/image.jpg
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### 4. Business Owner Business Media Upload (Multiple Files)
+POST http://localhost:3000/business-owner/business-media
+Authorization: Bearer YOUR_BUSINESS_OWNER_JWT_TOKEN_HERE
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="files"; filename="portfolio1.jpg"
+Content-Type: image/jpeg
+
+< ./path/to/portfolio1.jpg
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="files"; filename="portfolio2.mp4"
+Content-Type: video/mp4
+
+< ./path/to/portfolio2.mp4
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### 5. Get Business Media
+GET http://localhost:3000/business-owner/business-media
+Authorization: Bearer YOUR_BUSINESS_OWNER_JWT_TOKEN_HERE
+
+### 6. Delete Business Media
+DELETE http://localhost:3000/business-owner/business-media/MEDIA_ID_HERE
+Authorization: Bearer YOUR_BUSINESS_OWNER_JWT_TOKEN_HERE
+
+### 7. Get Business Owner Profile (Updated - now returns single address)
+GET http://localhost:3000/api/v1/business-owner/profile
+Authorization: Bearer YOUR_BUSINESS_OWNER_JWT_TOKEN_HERE
+
+### 8. Get Customer Profile (For comparison - no addresses in profile)
+GET http://localhost:3000/api/v1/customer/profile
+Authorization: Bearer YOUR_CUSTOMER_JWT_TOKEN_HERE
+
+### 9. Create Business Owner Personal Address (to test address field)
+POST http://localhost:3000/api/v1/user/addresses
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NGJkZWU3Ny01ZjI0LTQ3MjAtYTVjYS1kOTY4NTc2Y2FkYTkiLCJwaG9uZSI6Ijk2NDk2MDU2OTkiLCJyb2xlcyI6WyJidXNpbmVzc19vd25lciJdLCJpYXQiOjE3NTg4NjY4OTksImV4cCI6MTc1ODg3MDE5OX0.ovY-0S3uU-lwc3_tWMKUt_adboyoLgWWhPMjOpE9WmU
+Content-Type: application/json
+
+{
+  "addressType": "home",
+  "streetAddress": "456 Oak Street",
+  "addressLine1": "Apartment 201",
+  "addressLine2": "Near Central Park",
+  "landmark": "Next to Coffee Shop",
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "postalCode": "400001",
+  "country": "India",
+  "isPrimary": true
+}
+
+### 10. Get User Addresses (to verify address was created)
+GET http://localhost:3000/api/v1/user/addresses
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NGJkZWU3Ny01ZjI0LTQ3MjAtYTVjYS1kOTY4NTc2Y2FkYTkiLCJwaG9uZSI6Ijk2NDk2MDU2OTkiLCJyb2xlcyI6WyJidXNpbmVzc19vd25lciJdLCJpYXQiOjE3NTg4NjY4OTksImV4cCI6MTc1ODg3MDE5OX0.ovY-0S3uU-lwc3_tWMKUt_adboyoLgWWhPMjOpE9WmU

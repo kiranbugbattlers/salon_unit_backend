@@ -1,0 +1,313 @@
+{
+	"info": {
+		"_postman_id": "b1a2c3d4-e5f6-7890-1234-567890abcdef",
+		"name": "Salon Backend - Business Approval API",
+		"description": "Comprehensive business approval endpoints with media, info, owner details, documents, banking, and reviews",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "📋 Get All Businesses with Details",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{admin_token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/approval/admin/businesses/details?page=1&limit=10&status=pending",
+					"host": ["{{base_url}}"],
+					"path": ["approval", "admin", "businesses", "details"],
+					"query": [
+						{
+							"key": "page",
+							"value": "1",
+							"description": "Page number (default: 1)"
+						},
+						{
+							"key": "limit",
+							"value": "10",
+							"description": "Items per page (default: 10)"
+						},
+						{
+							"key": "status",
+							"value": "pending",
+							"description": "Filter by approval status: pending, approved, rejected"
+						}
+					]
+				},
+				"description": "Get all businesses with comprehensive details including media, info, owner info, documents, bank details, and reviews"
+			},
+			"response": []
+		},
+		{
+			"name": "🔍 Get Business by ID with Details",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{admin_token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/approval/admin/businesses/{{business_owner_id}}/details",
+					"host": ["{{base_url}}"],
+					"path": ["approval", "admin", "businesses", "{{business_owner_id}}", "details"]
+				},
+				"description": "Get a specific business with all related data including media, info, owner info, documents, bank details, and reviews"
+			},
+			"response": []
+		},
+		{
+			"name": "✏️ Update Business Approval Details",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{admin_token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"businessName\": \"Updated Business Name\",\n  \"businessDescription\": \"Updated business description\",\n  \"businessPhone\": \"+1234567890\",\n  \"businessEmail\": \"business@example.com\",\n  \"website\": \"https://example.com\",\n  \"businessCategory\": \"Salon\",\n  \"streetAddress\": \"123 Main Street\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"pincode\": \"400001\",\n  \"latitude\": 19.0760,\n  \"longitude\": 72.8777,\n  \"bankName\": \"State Bank of India\",\n  \"accountHolderName\": \"John Doe\",\n  \"ifscCode\": \"SBIN0000001\",\n  \"branchName\": \"Main Branch\",\n  \"approvalStatus\": \"approved\",\n  \"reviewNotes\": \"Business verified and approved\",\n  \"rejectionReason\": \"\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/approval/admin/businesses/{{business_owner_id}}/details",
+					"host": ["{{base_url}}"],
+					"path": ["approval", "admin", "businesses", "{{business_owner_id}}", "details"]
+				},
+				"description": "Update business approval details. Email and mobile number cannot be changed."
+			},
+			"response": []
+		},
+		{
+			"name": "📊 Get Pending Businesses (Existing)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{admin_token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/approval/admin/pending-businesses?page=1&limit=10",
+					"host": ["{{base_url}}"],
+					"path": ["approval", "admin", "pending-businesses"],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "limit",
+							"value": "10"
+						}
+					]
+				},
+				"description": "Get pending business approvals (existing endpoint)"
+			},
+			"response": []
+		},
+		{
+			"name": "✅ Approve Business (Existing)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{admin_token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"reviewNotes\": \"Business looks good. All documents verified.\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/approval/admin/approve/{{business_owner_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["approval", "admin", "approve", "{{business_owner_id}}"]
+				},
+				"description": "Approve a business (existing endpoint)"
+			},
+			"response": []
+		},
+		{
+			"name": "❌ Reject Business (Existing)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{admin_token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"reviewNotes\": \"Documents incomplete or invalid.\",\n  \"rejectionReason\": \"Missing required business documents\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/approval/admin/reject/{{business_owner_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["approval", "admin", "reject", "{{business_owner_id}}"]
+				},
+				"description": "Reject a business (existing endpoint)"
+			},
+			"response": []
+		},
+		{
+			"name": "✅ Get All Approved Business Owners",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{admin_token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/approval/admin/approved-business-owners?page=1&limit=10",
+					"host": ["{{base_url}}"],
+					"path": ["approval", "admin", "approved-business-owners"],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "limit",
+							"value": "10"
+						}
+					]
+				},
+				"description": "Get all approved business owners with their details"
+			},
+			"response": []
+		},
+		{
+			"name": "🔍 Get Approved Business Owner by ID",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{admin_token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/approval/admin/approved-business-owners/{{business_owner_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["approval", "admin", "approved-business-owners", "{{business_owner_id}}"]
+				},
+				"description": "Get a specific approved business owner with all their details"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "admin_token",
+			"value": "your_admin_jwt_token_here",
+			"type": "string",
+			"description": "Get this from login endpoint"
+		},
+		{
+			"key": "business_owner_id",
+			"value": "example-business-owner-id",
+			"type": "string",
+			"description": "Replace with actual business owner ID"
+		}
+	]
+}
