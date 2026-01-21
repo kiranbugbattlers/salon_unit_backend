@@ -139,6 +139,9 @@ let BookingService = class BookingService {
                 const discountAmount = (servicePrice * serviceData.discountPercentage) / 100;
                 servicePrice = servicePrice - discountAmount;
             }
+            if (createBookingDto.serviceLocation === booking_enum_1.ServiceLocation.AT_HOME) {
+                servicePrice = servicePrice * 2;
+            }
             totalEstimatedAmount += servicePrice;
             totalEstimatedDuration += businessService.customDurationMinutes || businessService.service.defaultDuration || 0;
         }
@@ -192,6 +195,9 @@ let BookingService = class BookingService {
                 if (serviceData.discountPercentage > 0) {
                     const discountAmount = (estimatedPrice * serviceData.discountPercentage) / 100;
                     estimatedPrice = estimatedPrice - discountAmount;
+                }
+                if (createBookingDto.serviceLocation === booking_enum_1.ServiceLocation.AT_HOME) {
+                    estimatedPrice = estimatedPrice * 2;
                 }
                 return this.bookingRequestServiceRepository.create({
                     bookingRequestId: savedBookingRequest.id,

@@ -72,14 +72,6 @@ let VendorStatusController = class VendorStatusController {
             throw error;
         }
     }
-    async syncVendorStatusWithApproval(businessOwnerId) {
-        await this.vendorStatusService.updateVendorStatusOnApproval(businessOwnerId);
-        return {
-            code: 200,
-            success: true,
-            message: 'Vendor status synced with approval status successfully',
-        };
-    }
 };
 exports.VendorStatusController = VendorStatusController;
 __decorate([
@@ -126,16 +118,6 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], VendorStatusController.prototype, "manuallyUpdateVendorStatus", null);
-__decorate([
-    (0, common_1.Put)(':businessOwnerId/approval-sync'),
-    (0, swagger_1.ApiOperation)({ summary: 'Sync vendor status based on approval status' }),
-    (0, swagger_1.ApiParam)({ name: 'businessOwnerId', description: 'Business owner ID (UUID)' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'Vendor status synced successfully' }),
-    __param(0, (0, common_1.Param)('businessOwnerId')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", Promise)
-], VendorStatusController.prototype, "syncVendorStatusWithApproval", null);
 exports.VendorStatusController = VendorStatusController = __decorate([
     (0, swagger_1.ApiTags)('Admin - Vendor Status'),
     (0, common_1.Controller)('admin/vendor-status'),

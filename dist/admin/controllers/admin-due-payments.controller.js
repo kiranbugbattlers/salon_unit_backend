@@ -93,9 +93,26 @@ let AdminDuePaymentsController = AdminDuePaymentsController_1 = class AdminDuePa
         return {
             code: 200,
             success: true,
-            message: 'Due payments summary retrieved successfully',
+            message: 'Summary retrieved successfully',
             data: summary,
         };
+    }
+    async getCreditUsage(businessOwnerId) {
+        try {
+            const creditUsage = await this.vendorStatusService.calculateCreditUsage(businessOwnerId);
+            return {
+                code: 200,
+                success: true,
+                message: 'Credit usage retrieved successfully',
+                data: creditUsage,
+            };
+        }
+        catch (error) {
+            if (error.message === 'Business owner not found') {
+                throw new common_1.NotFoundException('Business owner not found');
+            }
+            throw error;
+        }
     }
     async getDuePaymentById(id) {
         const duePayment = await this.vendorDuePaymentRepository.findOne({
@@ -121,42 +138,18 @@ let AdminDuePaymentsController = AdminDuePaymentsController_1 = class AdminDuePa
             data: enrichedPayment,
         };
     }
-    async getCreditUsage(businessOwnerId) {
+    async checkCreditStatus(businessOwnerId) {
         try {
             const creditUsage = await this.vendorStatusService.calculateCreditUsage(businessOwnerId);
             return {
                 code: 200,
                 success: true,
-                message: 'Credit usage retrieved successfully',
-                data: {
-                    ...creditUsage,
-                    businessOwnerId,
-                },
-            };
-        }
-        catch (error) {
-            if (error.message === 'Business owner not found') {
-                throw new common_1.NotFoundException('Business owner not found');
-            }
-            throw error;
-        }
-    }
-    async checkCreditStatus(businessOwnerId) {
-        try {
-            const statusUpdate = await this.vendorStatusService.checkAndUpdateVendorStatusBasedOnCreditUsage(businessOwnerId);
-            return {
-                code: 200,
-                success: true,
-                message: statusUpdate.previousStatus !== statusUpdate.newStatus
-                    ? `Vendor status updated from ${statusUpdate.previousStatus} to ${statusUpdate.newStatus}`
-                    : `Vendor status remains ${statusUpdate.previousStatus}`,
+                message: 'Credit status check completed',
                 data: {
                     businessOwnerId,
-                    previousStatus: statusUpdate.previousStatus,
-                    newStatus: statusUpdate.newStatus,
-                    creditUsage: statusUpdate.creditUsage,
-                    statusChanged: statusUpdate.previousStatus !== statusUpdate.newStatus,
-                },
+                    creditUsage,
+                    note: 'Vendor status remains unchanged - only admin can modify vendor status'
+                }
             };
         }
         catch (error) {
@@ -222,7 +215,6 @@ let AdminDuePaymentsController = AdminDuePaymentsController_1 = class AdminDuePa
             creditLimit: newCreditLimit,
         });
         await this.vendorStatusService.preserveVendorStatusOnPayment(createDto.businessOwnerId);
-        await this.vendorStatusService.checkAndUpdateVendorStatusBasedOnCreditUsage(createDto.businessOwnerId);
         return {
             code: 201,
             success: true,
@@ -236,139 +228,106 @@ let AdminDuePaymentsController = AdminDuePaymentsController_1 = class AdminDuePa
         };
     }
     async updateDuePayment(id, updateDto) {
+        this.logger.log(`Updating due payment with ID: ${id}`);
+        this.logger.log(`Update data: ${JSON.stringify(updateDto)}`);
+        if (!id || typeof id !== 'string') {
+            throw new common_1.BadRequestException('Invalid due payment ID format');
+        }
         const duePayment = await this.vendorDuePaymentRepository.findOne({
             where: { id },
         });
         if (!duePayment) {
+            this.logger.warn(`Due payment not found with ID: ${id}`);
             throw new common_1.NotFoundException('Due payment not found');
         }
+        this.logger.log(`Found due payment: ${JSON.stringify({
+            id: duePayment.id,
+            dueAmount: duePayment.dueAmount,
+            paidAmount: duePayment.paidAmount,
+            status: duePayment.status
+        })}`);
         if (updateDto.paidAmount !== undefined) {
+            if (typeof updateDto.paidAmount !== 'number' || updateDto.paidAmount < 0) {
+                throw new common_1.BadRequestException('Paid amount must be a non-negative number');
+            }
+            if (updateDto.paidAmount > duePayment.dueAmount) {
+                throw new common_1.BadRequestException('Paid amount cannot exceed due amount');
+            }
             duePayment.paidAmount = updateDto.paidAmount;
             duePayment.remainingAmount = duePayment.dueAmount - updateDto.paidAmount;
+            this.logger.log(`Updated amounts - Paid: ${duePayment.paidAmount}, Remaining: ${duePayment.remainingAmount}`);
         }
         if (updateDto.status) {
+            const validStatuses = Object.values(entities_1.DuePaymentStatus);
+            if (!validStatuses.includes(updateDto.status)) {
+                throw new common_1.BadRequestException(`Invalid status. Must be one of: ${validStatuses.join(', ')}`);
+            }
             duePayment.status = updateDto.status;
             if (updateDto.status === entities_1.DuePaymentStatus.OVERDUE && !duePayment.markedOverdueAt) {
                 duePayment.markedOverdueAt = new Date();
             }
+            this.logger.log(`Updated status to: ${duePayment.status}`);
         }
         if (updateDto.adminRemarks !== undefined) {
             duePayment.adminRemarks = updateDto.adminRemarks;
+            this.logger.log(`Updated admin remarks: ${duePayment.adminRemarks}`);
         }
         if (updateDto.isBusinessEnabled !== undefined) {
             duePayment.isBusinessEnabled = updateDto.isBusinessEnabled;
+            this.logger.log(`Updated business enabled: ${duePayment.isBusinessEnabled}`);
         }
-        const updatedPayment = await this.vendorDuePaymentRepository.save(duePayment);
-        if (duePayment.businessOwnerId) {
-            await this.vendorStatusService.preserveVendorStatusOnPayment(duePayment.businessOwnerId);
-        }
-        return {
-            code: 200,
-            success: true,
-            message: 'Due payment updated successfully',
-            data: updatedPayment,
-        };
-    }
-    async checkOverduePayments() {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const pendingPayments = await this.vendorDuePaymentRepository.find({
-            where: {
-                status: entities_1.DuePaymentStatus.PENDING,
-                dueDate: (0, typeorm_2.LessThanOrEqual)(today),
-            },
-            relations: ['businessOwner'],
-        });
-        let newlyMarkedOverdue = 0;
-        const processedPayments = [];
-        for (const payment of pendingPayments) {
-            payment.status = entities_1.DuePaymentStatus.OVERDUE;
-            payment.markedOverdueAt = new Date();
-            await this.vendorDuePaymentRepository.save(payment);
-            if (payment.businessOwnerId) {
-                await this.vendorStatusService.preserveVendorStatusOnOverdue(payment.businessOwnerId);
+        try {
+            const updatedPayment = await this.vendorDuePaymentRepository.save(duePayment);
+            this.logger.log(`Successfully updated due payment: ${updatedPayment.id}`);
+            if (duePayment.businessOwnerId) {
+                await this.vendorStatusService.preserveVendorStatusOnPayment(duePayment.businessOwnerId);
             }
-            newlyMarkedOverdue++;
-            processedPayments.push({
-                id: payment.id,
-                businessName: payment.businessOwner?.businessName || 'N/A',
-                dueAmount: payment.dueAmount,
-                dueDate: payment.dueDate,
-                markedOverdueAt: payment.markedOverdueAt,
-            });
+            return {
+                code: 200,
+                success: true,
+                message: 'Due payment updated successfully',
+                data: {
+                    ...updatedPayment,
+                    businessName: duePayment.businessOwner?.businessName || 'N/A',
+                    ownerName: duePayment.businessOwner?.firstName && duePayment.businessOwner?.lastName
+                        ? `${duePayment.businessOwner.firstName} ${duePayment.businessOwner.lastName}`.trim()
+                        : duePayment.businessOwner?.businessName || 'N/A',
+                },
+            };
         }
-        const totalOverduePayments = await this.vendorDuePaymentRepository.count({
-            where: { status: entities_1.DuePaymentStatus.OVERDUE },
-        });
-        return {
-            code: 200,
-            success: true,
-            message: `Overdue check completed. ${newlyMarkedOverdue} payments marked as overdue.`,
-            data: {
-                newlyMarkedOverdue,
-                totalOverduePayments,
-                processedPayments,
-            },
-        };
+        catch (error) {
+            this.logger.error(`Failed to update due payment: ${error.message}`);
+            throw new common_1.BadRequestException(`Failed to update due payment: ${error.message}`);
+        }
     }
     async getDuePaymentsSummary(whereConditions = {}) {
-        const payments = await this.vendorDuePaymentRepository.find({
-            where: whereConditions,
-        });
-        const summary = {
-            totalRecords: payments.length,
-            totalDueAmount: 0,
-            totalPaidAmount: 0,
-            totalRemainingAmount: 0,
-            statusBreakdown: {
-                pending: { count: 0, amount: 0 },
-                overdue: { count: 0, amount: 0 },
-                paid: { count: 0, amount: 0 },
-                partiallyPaid: { count: 0, amount: 0 },
-            },
-            businessStatusBreakdown: {
-                enabled: { count: 0, amount: 0 },
-                disabled: { count: 0, amount: 0 },
-            },
-            overdueSummary: {
-                totalOverdueAmount: 0,
-                averageOverdueDays: 0,
-                oldestOverdueDate: null,
+        const summary = await this.vendorDuePaymentRepository
+            .createQueryBuilder('payment')
+            .select('payment.status', 'status')
+            .addSelect('COUNT(*)', 'count')
+            .addSelect('SUM(payment.dueAmount)', 'totalDueAmount')
+            .addSelect('SUM(payment.paidAmount)', 'totalPaidAmount')
+            .addSelect('SUM(payment.remainingAmount)', 'totalRemainingAmount')
+            .where(whereConditions)
+            .groupBy('payment.status')
+            .getRawMany();
+        const totals = await this.vendorDuePaymentRepository
+            .createQueryBuilder('payment')
+            .select('COUNT(*)', 'totalCount')
+            .addSelect('SUM(payment.dueAmount)', 'totalDueAmount')
+            .addSelect('SUM(payment.paidAmount)', 'totalPaidAmount')
+            .addSelect('SUM(payment.remainingAmount)', 'totalRemainingAmount')
+            .where(whereConditions)
+            .getRawOne();
+        return {
+            byStatus: summary,
+            totals: totals || {
+                totalCount: 0,
+                totalDueAmount: 0,
+                totalPaidAmount: 0,
+                totalRemainingAmount: 0,
             },
         };
-        const overduePayments = [];
-        let totalOverdueDays = 0;
-        for (const payment of payments) {
-            summary.totalDueAmount += Number(payment.dueAmount);
-            summary.totalPaidAmount += Number(payment.paidAmount);
-            summary.totalRemainingAmount += Number(payment.remainingAmount);
-            const status = payment.status;
-            if (summary.statusBreakdown[status]) {
-                summary.statusBreakdown[status].count++;
-                summary.statusBreakdown[status].amount += Number(payment.dueAmount);
-            }
-            const businessStatus = payment.isBusinessEnabled ? 'enabled' : 'disabled';
-            summary.businessStatusBreakdown[businessStatus].count++;
-            summary.businessStatusBreakdown[businessStatus].amount += Number(payment.dueAmount);
-            if (payment.status === entities_1.DuePaymentStatus.OVERDUE) {
-                summary.overdueSummary.totalOverdueAmount += Number(payment.dueAmount);
-                overduePayments.push(payment);
-                if (payment.markedOverdueAt) {
-                    const daysOverdue = Math.floor((new Date().getTime() - new Date(payment.markedOverdueAt).getTime()) / (1000 * 60 * 60 * 24));
-                    totalOverdueDays += daysOverdue;
-                }
-            }
-        }
-        if (overduePayments.length > 0) {
-            summary.overdueSummary.averageOverdueDays = Math.round(totalOverdueDays / overduePayments.length);
-            const oldestPayment = overduePayments.reduce((oldest, current) => {
-                const currentDate = new Date(current.dueDate);
-                const oldestDate = new Date(oldest.dueDate);
-                return currentDate < oldestDate ? current : oldest;
-            });
-            summary.overdueSummary.oldestOverdueDate = new Date(oldestPayment.dueDate).toISOString().split('T')[0];
-        }
-        return summary;
     }
 };
 exports.AdminDuePaymentsController = AdminDuePaymentsController;
@@ -411,17 +370,6 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AdminDuePaymentsController.prototype, "getDuePaymentsSummaryEndpoint", null);
 __decorate([
-    (0, common_1.Get)(':id'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get specific due payment details' }),
-    (0, swagger_1.ApiParam)({ name: 'id', description: 'Due payment ID (UUID)' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'Due payment details retrieved successfully' }),
-    (0, swagger_1.ApiResponse)({ status: 404, description: 'Due payment not found' }),
-    __param(0, (0, common_1.Param)('id')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", Promise)
-], AdminDuePaymentsController.prototype, "getDuePaymentById", null);
-__decorate([
     (0, common_1.Get)('credit-usage/:businessOwnerId'),
     (0, swagger_1.ApiOperation)({ summary: 'Get credit usage details for a vendor' }),
     (0, swagger_1.ApiParam)({ name: 'businessOwnerId', description: 'Business owner ID (UUID)' }),
@@ -432,6 +380,17 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], AdminDuePaymentsController.prototype, "getCreditUsage", null);
+__decorate([
+    (0, common_1.Get)(':id'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get specific due payment details' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Due payment ID (UUID)' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Due payment details retrieved successfully' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Due payment not found' }),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AdminDuePaymentsController.prototype, "getDuePaymentById", null);
 __decorate([
     (0, common_1.Post)('check-credit-status/:businessOwnerId'),
     (0, swagger_1.ApiOperation)({ summary: 'Check and update vendor status based on credit usage' }),
@@ -502,20 +461,13 @@ __decorate([
     }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Due payment updated successfully' }),
     (0, swagger_1.ApiResponse)({ status: 404, description: 'Due payment not found' }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: 'Invalid data provided' }),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], AdminDuePaymentsController.prototype, "updateDuePayment", null);
-__decorate([
-    (0, common_1.Post)('check-overdue'),
-    (0, swagger_1.ApiOperation)({ summary: 'Mark pending payments as overdue' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'Overdue check completed successfully' }),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", Promise)
-], AdminDuePaymentsController.prototype, "checkOverduePayments", null);
 exports.AdminDuePaymentsController = AdminDuePaymentsController = AdminDuePaymentsController_1 = __decorate([
     (0, swagger_1.ApiTags)('Admin - Due Payments'),
     (0, common_1.Controller)('admin/due-payments'),

@@ -38,7 +38,7 @@ __decorate([
 ], MonthlySettlement.prototype, "businessOwnerId", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ description: 'Settlement month in YYYY-MM format', example: '2024-01' }),
-    (0, typeorm_1.Column)({ name: 'settlement_month', type: 'varchar', length: 7 }),
+    (0, typeorm_1.Column)({ name: 'settlement_month', type: 'varchar', length: 10 }),
     __metadata("design:type", String)
 ], MonthlySettlement.prototype, "settlementMonth", void 0);
 __decorate([

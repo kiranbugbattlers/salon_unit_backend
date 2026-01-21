@@ -9,8 +9,8 @@ export declare class AdminDuePaymentsController {
     constructor(vendorDuePaymentRepository: Repository<VendorDuePayment>, businessOwnerRepository: Repository<BusinessOwner>, vendorStatusService: VendorStatusService);
     getAllDuePayments(status?: DuePaymentStatus, businessOwnerId?: string, fromDate?: string, toDate?: string, page?: number, limit?: number, sortBy?: string, sortOrder?: 'ASC' | 'DESC'): Promise<any>;
     getDuePaymentsSummaryEndpoint(businessOwnerId?: string, fromDate?: string, toDate?: string): Promise<any>;
-    getDuePaymentById(id: string): Promise<any>;
     getCreditUsage(businessOwnerId: string): Promise<any>;
+    getDuePaymentById(id: string): Promise<any>;
     checkCreditStatus(businessOwnerId: string): Promise<any>;
     setCreditLimit(businessOwnerId: string, setCreditDto: {
         creditLimit: number;
@@ -18,6 +18,5 @@ export declare class AdminDuePaymentsController {
     }): Promise<any>;
     createDuePayment(createDto: any): Promise<any>;
     updateDuePayment(id: string, updateDto: any): Promise<any>;
-    checkOverduePayments(): Promise<any>;
     private getDuePaymentsSummary;
 }
