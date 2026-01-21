@@ -1,2 +1,8 @@
-node_modules
+# Dependencies
+node_modules/
+
+# Environment variables
 .env
+
+# Firebase / Google service account keys
+*.json
