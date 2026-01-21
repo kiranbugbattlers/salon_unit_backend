@@ -11,6 +11,10 @@ export declare class AdminVendorController {
     updateVendorStatus(businessOwnerId: string, updateDto: UpdateVendorStatusDto): Promise<any>;
     addVendorCredit(businessOwnerId: string, addCreditDto: AddVendorCreditDto): Promise<any>;
     getVendorCreditInfo(businessOwnerId: string): Promise<any>;
+    updateVendorCreditLimit(businessOwnerId: string, updateDto: {
+        creditLimit: number;
+        remarks?: string;
+    }): Promise<any>;
     updateVendorCreditStatus(businessOwnerId: string, statusDto: VendorCreditStatusDto): Promise<any>;
     checkOverdueVendors(): Promise<any>;
     getAllVendorsCreditStatus(): Promise<any>;

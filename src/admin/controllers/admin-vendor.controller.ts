@@ -231,6 +231,74 @@ export class AdminVendorController {
     };
   }
 
+  @Put(':businessOwnerId/credit')
+  @ApiOperation({
+    summary: 'Update vendor credit limit',
+    description: 'Update credit limit for a specific vendor',
+  })
+  @ApiParam({ name: 'businessOwnerId', description: 'Business owner ID (UUID)' })
+  @ApiBody({
+    description: 'Credit limit update data',
+    schema: {
+      example: {
+        creditLimit: 10000.00,
+        remarks: 'Updated credit limit based on performance',
+      }
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Vendor credit limit updated successfully' })
+  @ApiResponse({ status: 404, description: 'Vendor not found' })
+  @ApiResponse({ status: 400, description: 'Invalid data provided' })
+  async updateVendorCreditLimit(
+    @Param('businessOwnerId', ParseUUIDPipe) businessOwnerId: string,
+    @Body() updateDto: { creditLimit: number; remarks?: string }
+  ): Promise<any> {
+    try {
+      const vendor = await this.businessOwnerRepository.findOne({
+        where: { id: businessOwnerId },
+      });
+
+      if (!vendor) {
+        throw new NotFoundException('Vendor not found');
+      }
+
+      const previousCreditLimit = vendor.creditLimit || 0;
+      
+      // Validate credit limit
+      if (typeof updateDto.creditLimit !== 'number' || updateDto.creditLimit < 0) {
+        throw new BadRequestException('Credit limit must be a non-negative number');
+      }
+
+      // Update credit limit
+      await this.businessOwnerRepository.update(
+        { id: businessOwnerId },
+        { 
+          creditLimit: parseFloat(updateDto.creditLimit.toString()),
+        }
+      );
+
+      // Log the update
+      console.log(`Updated credit limit for vendor ${businessOwnerId}: ${previousCreditLimit} → ${updateDto.creditLimit}`);
+
+      return {
+        code: 200,
+        success: true,
+        message: `Vendor credit limit updated from ${previousCreditLimit} to ${updateDto.creditLimit} successfully`,
+        data: {
+          businessOwnerId,
+          previousCreditLimit,
+          newCreditLimit: parseFloat(updateDto.creditLimit.toString()),
+          remarks: updateDto.remarks,
+        },
+      };
+    } catch (error) {
+      if (error.message === 'Vendor not found') {
+        throw new NotFoundException('Vendor not found');
+      }
+      throw new BadRequestException(`Failed to update vendor credit limit: ${error.message}`);
+    }
+  }
+
   @Put(':businessOwnerId/credit-status')
   @ApiOperation({
     summary: 'Update vendor credit status',

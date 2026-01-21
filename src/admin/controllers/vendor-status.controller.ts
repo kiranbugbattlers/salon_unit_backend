@@ -124,20 +124,4 @@ export class VendorStatusController {
       throw error;
     }
   }
-
-  @Put(':businessOwnerId/approval-sync')
-  @ApiOperation({ summary: 'Sync vendor status based on approval status' })
-  @ApiParam({ name: 'businessOwnerId', description: 'Business owner ID (UUID)' })
-  @ApiResponse({ status: 200, description: 'Vendor status synced successfully' })
-  async syncVendorStatusWithApproval(
-    @Param('businessOwnerId') businessOwnerId: string,
-  ): Promise<any> {
-    await this.vendorStatusService.updateVendorStatusOnApproval(businessOwnerId);
-
-    return {
-      code: 200,
-      success: true,
-      message: 'Vendor status synced with approval status successfully',
-    };
-  }
 }

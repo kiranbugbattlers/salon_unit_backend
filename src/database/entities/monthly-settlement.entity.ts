@@ -36,7 +36,7 @@ export class MonthlySettlement {
   businessOwnerId: string;
 
   @ApiProperty({ description: 'Settlement month in YYYY-MM format', example: '2024-01' })
-  @Column({ name: 'settlement_month', type: 'varchar', length: 7 })
+  @Column({ name: 'settlement_month', type: 'varchar', length: 10 })
   settlementMonth: string;
 
   @ApiProperty({ description: 'Total booking amount for the month' })

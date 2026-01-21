@@ -29,9 +29,10 @@ export class VendorCreditManagementService {
     const previousCreditLimit = parseFloat((vendor.creditLimit || 0).toString());
     const newCreditLimit = previousCreditLimit + addCreditDto.creditPoints;
     
-    // Update vendor credit and activate account
+    // Update vendor credit and ensure account is active
     vendor.creditLimit = newCreditLimit;
-    vendor.vendorStatus = VendorStatus.ACTIVE; // Activate account when credit is added
+    // Ensure vendor account is active when credit points are added
+    vendor.vendorStatus = VendorStatus.ACTIVE;
     vendor.isActive = true;
 
     const updatedVendor = await this.businessOwnerRepository.save(vendor);
@@ -49,13 +50,16 @@ export class VendorCreditManagementService {
       newCreditLimit: parseFloat(updatedVendor.creditLimit.toFixed(2)),
       accountStatus: updatedVendor.vendorStatus,
       isActive: updatedVendor.isActive,
-      reason: addCreditDto.reason || 'Credit points added by admin - account activated',
+      reason: addCreditDto.reason || 'Credit points added by admin - vendor account activated',
       activatedAt: updatedVendor.updatedAt,
     };
   }
 
   async checkAndUpdateOverdueVendors() {
-    // Find vendors with 0 or negative credit
+    // DEPRECATED: This method should no longer change vendor status automatically
+    // Vendor status should only be changed by admin manually
+    // This method now only returns information without changing status
+    
     const overdueVendors = await this.businessOwnerRepository.find({
       where: [
         { creditLimit: LessThanOrEqual(0) },
@@ -64,33 +68,23 @@ export class VendorCreditManagementService {
       relations: ['user'],
     });
 
-    const updatedVendors = [];
-    
-    for (const vendor of overdueVendors) {
-      if (vendor.vendorStatus !== VendorStatus.INACTIVE) {
-        // Mark as overdue using INACTIVE status (since 'overdue' is not in enum)
-        vendor.vendorStatus = VendorStatus.INACTIVE;
-        vendor.isActive = false;
-        await this.businessOwnerRepository.save(vendor);
-        
-        updatedVendors.push({
-          id: vendor.id,
-          shopId: vendor.shopId,
-          businessName: vendor.businessName,
-          ownerName: vendor.firstName && vendor.lastName
-            ? `${vendor.firstName} ${vendor.lastName}`.trim()
-            : vendor.businessName || 'N/A',
-          previousStatus: vendor.vendorStatus,
-          newStatus: VendorStatus.INACTIVE,
-          creditLimit: vendor.creditLimit || 0,
-          markedOverdueAt: new Date(),
-        });
-      }
-    }
+    const overdueInfo = overdueVendors.map(vendor => ({
+      id: vendor.id,
+      shopId: vendor.shopId,
+      businessName: vendor.businessName,
+      ownerName: vendor.firstName && vendor.lastName
+        ? `${vendor.firstName} ${vendor.lastName}`.trim()
+        : vendor.businessName || 'N/A',
+      currentStatus: vendor.vendorStatus,
+      creditLimit: vendor.creditLimit || 0,
+      isOverdue: (vendor.creditLimit || 0) <= 0,
+      note: 'Vendor status remains unchanged - only admin can modify vendor status',
+    }));
 
     return {
-      totalOverdue: updatedVendors.length,
-      vendors: updatedVendors,
+      totalOverdue: overdueInfo.length,
+      vendors: overdueInfo,
+      message: 'Vendor status check completed - no automatic changes made',
     };
   }
 
@@ -164,29 +158,27 @@ export class VendorCreditManagementService {
 
     const previousStatus = vendor.vendorStatus;
     
-    // Update active status based on credit status
-    if (statusDto.status === 'active') {
-      vendor.vendorStatus = VendorStatus.ACTIVE;
-      vendor.isActive = true;
-    } else if (statusDto.status === 'overdue' || statusDto.status === 'suspended') {
-      vendor.vendorStatus = VendorStatus.INACTIVE;
-      vendor.isActive = false;
-    }
+    // DEPRECATED: Do NOT automatically change vendor status based on credit status
+    // Vendor status should only be changed manually by admin
+    // This method now only logs the request without changing status
+    
+    console.log(`DEPRECATED: updateVendorCreditStatus called for vendor ${businessOwnerId}. ` +
+                `Requested status: ${statusDto.status}. Vendor status remains ${previousStatus} - ` +
+                'only admin can manually change vendor status.');
 
-    const updatedVendor = await this.businessOwnerRepository.save(vendor);
-
+    // Return unchanged vendor info
     return {
-      id: updatedVendor.id,
-      shopId: updatedVendor.shopId,
-      businessName: updatedVendor.businessName,
-      ownerName: updatedVendor.firstName && updatedVendor.lastName
-        ? `${updatedVendor.firstName} ${updatedVendor.lastName}`.trim()
-        : updatedVendor.businessName || 'N/A',
+      id: vendor.id,
+      shopId: vendor.shopId,
+      businessName: vendor.businessName,
+      ownerName: vendor.firstName && vendor.lastName
+        ? `${vendor.firstName} ${vendor.lastName}`.trim()
+        : vendor.businessName || 'N/A',
       previousStatus,
-      newStatus: updatedVendor.vendorStatus,
-      isActive: updatedVendor.isActive,
-      notes: statusDto.notes || `Status updated by admin`,
-      updatedAt: updatedVendor.updatedAt,
+      newStatus: previousStatus, // Status unchanged
+      isActive: vendor.isActive,
+      notes: `Status change request ignored - vendor status remains ${previousStatus}. Only admin can manually change vendor status.`,
+      updatedAt: vendor.updatedAt,
     };
   }
 

@@ -77,7 +77,10 @@ let BookingRequestService = class BookingRequestService {
                 for (const businessService of packageServices) {
                     if (!allBusinessServiceIds.has(businessService.id)) {
                         allBusinessServiceIds.add(businessService.id);
-                        const finalPrice = businessService.customPrice * (1 - servicePackage.discountPercentage / 100);
+                        let finalPrice = businessService.customPrice * (1 - servicePackage.discountPercentage / 100);
+                        if (createDto.serviceLocation === entities_1.ServiceLocation.AT_HOME) {
+                            finalPrice = finalPrice * 2;
+                        }
                         const estimatedDuration = businessService.customDurationMinutes || businessService.service?.defaultDuration || 0;
                         if (estimatedDuration === 0) {
                             console.warn(`⚠️ Service ${businessService.id} has 0 duration. customDurationMinutes: ${businessService.customDurationMinutes}, defaultDuration: ${businessService.service?.defaultDuration}`);
@@ -106,13 +109,17 @@ let BookingRequestService = class BookingRequestService {
             for (const businessService of businessServices) {
                 if (!allBusinessServiceIds.has(businessService.id)) {
                     allBusinessServiceIds.add(businessService.id);
+                    let estimatedPrice = businessService.customPrice;
+                    if (createDto.serviceLocation === entities_1.ServiceLocation.AT_HOME) {
+                        estimatedPrice = estimatedPrice * 2;
+                    }
                     const estimatedDuration = businessService.customDurationMinutes || businessService.service?.defaultDuration || 0;
                     if (estimatedDuration === 0) {
                         console.warn(`⚠️ Service ${businessService.id} has 0 duration. customDurationMinutes: ${businessService.customDurationMinutes}, defaultDuration: ${businessService.service?.defaultDuration}`);
                     }
                     servicesData.push({
                         businessServiceId: businessService.id,
-                        estimatedPrice: businessService.customPrice,
+                        estimatedPrice: estimatedPrice,
                         estimatedDuration,
                     });
                 }

@@ -18,36 +18,14 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const entities_1 = require("../../database/entities");
-const vendor_status_enum_1 = require("../../common/enums/vendor-status.enum");
 let VendorStatusService = VendorStatusService_1 = class VendorStatusService {
     constructor(businessOwnerRepository) {
         this.businessOwnerRepository = businessOwnerRepository;
         this.logger = new common_1.Logger(VendorStatusService_1.name);
     }
     async updateVendorStatusOnApproval(businessOwnerId) {
-        try {
-            const businessOwner = await this.businessOwnerRepository.findOne({
-                where: { id: businessOwnerId },
-            });
-            if (!businessOwner) {
-                this.logger.warn(`Business owner ${businessOwnerId} not found`);
-                return;
-            }
-            const oldStatus = businessOwner.vendorStatus;
-            if (businessOwner.isApproved && businessOwner.vendorStatus !== vendor_status_enum_1.VendorStatus.ACTIVE) {
-                businessOwner.vendorStatus = vendor_status_enum_1.VendorStatus.ACTIVE;
-                this.logger.log(`Business owner ${businessOwnerId} approved - vendor status changed from ${oldStatus} to ${vendor_status_enum_1.VendorStatus.ACTIVE}`);
-            }
-            else if (!businessOwner.isApproved && businessOwner.vendorStatus === vendor_status_enum_1.VendorStatus.ACTIVE) {
-                businessOwner.vendorStatus = vendor_status_enum_1.VendorStatus.HOLD_ACCOUNT;
-                this.logger.log(`Business owner ${businessOwnerId} unapproved - vendor status changed from ${oldStatus} to ${vendor_status_enum_1.VendorStatus.HOLD_ACCOUNT}`);
-            }
-            await this.businessOwnerRepository.save(businessOwner);
-        }
-        catch (error) {
-            this.logger.error(`Failed to update vendor status for business owner ${businessOwnerId}:`, error);
-            throw error;
-        }
+        this.logger.warn(`DEPRECATED: updateVendorStatusOnApproval called for business owner ${businessOwnerId}. ` +
+            'Vendor status should only be changed manually by admin.');
     }
     async manuallyUpdateVendorStatus(businessOwnerId, newStatus, adminRemarks) {
         try {
@@ -131,21 +109,17 @@ let VendorStatusService = VendorStatusService_1 = class VendorStatusService {
             }
             const previousStatus = businessOwner.vendorStatus;
             const creditUsage = await this.calculateCreditUsage(businessOwnerId);
-            let newStatus = previousStatus;
-            if (creditUsage.isOverdue && previousStatus === vendor_status_enum_1.VendorStatus.ACTIVE) {
-                this.logger.warn(`Business owner ${businessOwnerId} has overdue payments but remains ACTIVE. ` +
-                    `Usage: ₹${creditUsage.totalDueAmount - creditUsage.totalPaidAmount} / ₹${creditUsage.creditLimit}. ` +
-                    `Vendor remains active despite overdue payments.`);
-                newStatus = previousStatus;
-            }
+            this.logger.log(`Business owner ${businessOwnerId} payment status checked. ` +
+                `Usage: ₹${creditUsage.totalDueAmount - creditUsage.totalPaidAmount} / ₹${creditUsage.creditLimit}. ` +
+                `Vendor status remains ${previousStatus} - payments do not affect vendor status.`);
             return {
                 previousStatus,
-                newStatus,
+                newStatus: previousStatus,
                 creditUsage,
             };
         }
         catch (error) {
-            this.logger.error(`Failed to check and update vendor status for business owner ${businessOwnerId}:`, error);
+            this.logger.error(`Failed to check credit usage for business owner ${businessOwnerId}:`, error);
             throw error;
         }
     }

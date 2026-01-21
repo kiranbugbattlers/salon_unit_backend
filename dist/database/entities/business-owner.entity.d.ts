@@ -46,5 +46,5 @@ export declare class BusinessOwner {
     documents: BusinessDocument[];
     duePayments: VendorDuePayment[];
     generateShopId(): void;
-    updateVendorStatusOnApproval(): void;
+    preserveVendorStatus(): void;
 }

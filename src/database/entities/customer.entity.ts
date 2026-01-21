@@ -24,9 +24,9 @@ export class Customer {
   @Column({ name: 'user_id' })
   userId: string;
 
-  // @ApiProperty({ required: false })
-  // @Column({ name: 'onboarding_id', nullable: true })
-  // onboardingId?: string;
+  @ApiProperty({ required: false })
+  @Column({ name: 'onboarding_id', nullable: true })
+  onboardingId?: string;
 
   @ApiProperty({ required: false })
   @Column({ name: 'first_name', length: 100, nullable: true })
@@ -60,9 +60,9 @@ export class Customer {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  // @OneToOne(() => CustomerOnboarding, (onboarding) => onboarding.customer, { cascade: true })
-  // @JoinColumn({ name: 'onboarding_id' })
-  // onboarding?: CustomerOnboarding;
+  @OneToOne(() => CustomerOnboarding, (onboarding) => onboarding.customer, { cascade: true })
+  @JoinColumn({ name: 'onboarding_id' })
+  onboarding?: CustomerOnboarding;
 
   @OneToMany(() => Review, (review) => review.customer)
   reviews: Review[];
