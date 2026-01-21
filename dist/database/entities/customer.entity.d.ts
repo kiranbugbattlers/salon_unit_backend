@@ -1,4 +1,5 @@
 import { Gender } from '../../common/enums';
+import { CustomerOnboarding } from './customer-onboarding.entity';
 import { User } from './user.entity';
 import { Review } from './review.entity';
 export declare class Customer {
@@ -11,5 +12,6 @@ export declare class Customer {
     createdAt: Date;
     updatedAt: Date;
     user: User;
+    onboarding?: CustomerOnboarding;
     reviews: Review[];
 }

@@ -13,6 +13,7 @@ exports.Customer = void 0;
 const typeorm_1 = require("typeorm");
 const swagger_1 = require("@nestjs/swagger");
 const enums_1 = require("../../common/enums");
+const customer_onboarding_entity_1 = require("./customer-onboarding.entity");
 const user_entity_1 = require("./user.entity");
 const review_entity_1 = require("./review.entity");
 let Customer = class Customer {
@@ -67,6 +68,10 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: 'user_id' }),
     __metadata("design:type", user_entity_1.User)
 ], Customer.prototype, "user", void 0);
+__decorate([
+    (0, typeorm_1.OneToOne)(() => customer_onboarding_entity_1.CustomerOnboarding, (onboarding) => onboarding.customer),
+    __metadata("design:type", customer_onboarding_entity_1.CustomerOnboarding)
+], Customer.prototype, "onboarding", void 0);
 __decorate([
     (0, typeorm_1.OneToMany)(() => review_entity_1.Review, (review) => review.customer),
     __metadata("design:type", Array)
