@@ -214,6 +214,11 @@ export class BookingService {
         servicePrice = servicePrice - discountAmount;
       }
 
+      // Double the price for at-home services
+      if (createBookingDto.serviceLocation === ServiceLocation.AT_HOME) {
+        servicePrice = servicePrice * 2;
+      }
+
       totalEstimatedAmount += servicePrice;
       totalEstimatedDuration += businessService.customDurationMinutes || businessService.service.defaultDuration || 0;
     }
@@ -293,6 +298,11 @@ export class BookingService {
         if (serviceData.discountPercentage > 0) {
           const discountAmount = (estimatedPrice * serviceData.discountPercentage) / 100;
           estimatedPrice = estimatedPrice - discountAmount;
+        }
+        
+        // Double the price for at-home services
+        if (createBookingDto.serviceLocation === ServiceLocation.AT_HOME) {
+          estimatedPrice = estimatedPrice * 2;
         }
         
         return this.bookingRequestServiceRepository.create({

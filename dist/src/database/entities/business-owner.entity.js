@@ -33,15 +33,7 @@ let BusinessOwner = class BusinessOwner {
             this.shopId = (0, shop_id_util_1.generateShopId)();
         }
     }
-    updateVendorStatusOnApproval() {
-        if (this.isApproved !== undefined) {
-            if (this.isApproved && this.vendorStatus !== vendor_status_enum_1.VendorStatus.ACTIVE) {
-                this.vendorStatus = vendor_status_enum_1.VendorStatus.ACTIVE;
-            }
-            else if (!this.isApproved && this.vendorStatus === vendor_status_enum_1.VendorStatus.ACTIVE) {
-                this.vendorStatus = vendor_status_enum_1.VendorStatus.HOLD_ACCOUNT;
-            }
-        }
+    preserveVendorStatus() {
     }
 };
 exports.BusinessOwner = BusinessOwner;
@@ -140,7 +132,7 @@ __decorate([
         name: 'vendor_status',
         type: 'enum',
         enum: vendor_status_enum_1.VendorStatus,
-        default: vendor_status_enum_1.VendorStatus.HOLD_ACCOUNT,
+        default: vendor_status_enum_1.VendorStatus.ACTIVE,
     }),
     __metadata("design:type", String)
 ], BusinessOwner.prototype, "vendorStatus", void 0);
@@ -214,7 +206,7 @@ __decorate([
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
-], BusinessOwner.prototype, "updateVendorStatusOnApproval", null);
+], BusinessOwner.prototype, "preserveVendorStatus", null);
 exports.BusinessOwner = BusinessOwner = __decorate([
     (0, typeorm_1.Entity)('business_owner')
 ], BusinessOwner);

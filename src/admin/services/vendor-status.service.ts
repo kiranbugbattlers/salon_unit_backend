@@ -14,36 +14,16 @@ export class VendorStatusService {
   ) {}
 
   /**
-   * Update vendor status based on business owner approval status
-   * This is the only automated way vendor status should change
+   * DEPRECATED: This method should no longer be used
+   * Vendor status should NOT change automatically based on approval
+   * Only admin can manually change vendor status
    */
   async updateVendorStatusOnApproval(businessOwnerId: string): Promise<void> {
-    try {
-      const businessOwner = await this.businessOwnerRepository.findOne({
-        where: { id: businessOwnerId },
-      });
-
-      if (!businessOwner) {
-        this.logger.warn(`Business owner ${businessOwnerId} not found`);
-        return;
-      }
-
-      const oldStatus = businessOwner.vendorStatus;
-      
-      // Only change vendor status based on approval status
-      if (businessOwner.isApproved && businessOwner.vendorStatus !== VendorStatus.ACTIVE) {
-        businessOwner.vendorStatus = VendorStatus.ACTIVE;
-        this.logger.log(`Business owner ${businessOwnerId} approved - vendor status changed from ${oldStatus} to ${VendorStatus.ACTIVE}`);
-      } else if (!businessOwner.isApproved && businessOwner.vendorStatus === VendorStatus.ACTIVE) {
-        businessOwner.vendorStatus = VendorStatus.HOLD_ACCOUNT;
-        this.logger.log(`Business owner ${businessOwnerId} unapproved - vendor status changed from ${oldStatus} to ${VendorStatus.HOLD_ACCOUNT}`);
-      }
-
-      await this.businessOwnerRepository.save(businessOwner);
-    } catch (error) {
-      this.logger.error(`Failed to update vendor status for business owner ${businessOwnerId}:`, error);
-      throw error;
-    }
+    this.logger.warn(
+      `DEPRECATED: updateVendorStatusOnApproval called for business owner ${businessOwnerId}. ` +
+      'Vendor status should only be changed manually by admin.'
+    );
+    // Do nothing - vendor status should not change automatically
   }
 
   /**
@@ -154,8 +134,8 @@ export class VendorStatusService {
   }
 
   /**
-   * Check and update vendor status based on credit usage
-   * If usage exceeds credit limit, mark as overdue
+   * DEPRECATED: Vendor status should NEVER change based on credit usage
+   * Vendors remain active regardless of payment status
    */
   async checkAndUpdateVendorStatusBasedOnCreditUsage(businessOwnerId: string): Promise<{
     previousStatus: string;
@@ -173,26 +153,22 @@ export class VendorStatusService {
 
       const previousStatus = businessOwner.vendorStatus;
       const creditUsage = await this.calculateCreditUsage(businessOwnerId);
-      let newStatus = previousStatus;
-
-      // Vendors with due payments should NOT be suspended - keep them active
-      if (creditUsage.isOverdue && previousStatus === VendorStatus.ACTIVE) {
-        // Don't suspend vendors with due payments - keep them active
-        this.logger.warn(
-          `Business owner ${businessOwnerId} has overdue payments but remains ACTIVE. ` +
-          `Usage: ₹${creditUsage.totalDueAmount - creditUsage.totalPaidAmount} / ₹${creditUsage.creditLimit}. ` +
-          `Vendor remains active despite overdue payments.`
-        );
-        newStatus = previousStatus; // Keep same status - remain ACTIVE
-      }
+      
+      // NEVER change vendor status based on payment status
+      // Vendors remain active regardless of due, pending, or overdue payments
+      this.logger.log(
+        `Business owner ${businessOwnerId} payment status checked. ` +
+        `Usage: ₹${creditUsage.totalDueAmount - creditUsage.totalPaidAmount} / ₹${creditUsage.creditLimit}. ` +
+        `Vendor status remains ${previousStatus} - payments do not affect vendor status.`
+      );
 
       return {
         previousStatus,
-        newStatus,
+        newStatus: previousStatus, // Status never changes
         creditUsage,
       };
     } catch (error) {
-      this.logger.error(`Failed to check and update vendor status for business owner ${businessOwnerId}:`, error);
+      this.logger.error(`Failed to check credit usage for business owner ${businessOwnerId}:`, error);
       throw error;
     }
   }

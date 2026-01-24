@@ -21,7 +21,17 @@ export declare class VendorCreditManagementService {
     }>;
     checkAndUpdateOverdueVendors(): Promise<{
         totalOverdue: number;
-        vendors: any[];
+        vendors: {
+            id: string;
+            shopId: string;
+            businessName: string;
+            ownerName: string;
+            currentStatus: VendorStatus;
+            creditLimit: number;
+            isOverdue: boolean;
+            note: string;
+        }[];
+        message: string;
     }>;
     getVendorCreditInfo(businessOwnerId: string): Promise<{
         id: string;

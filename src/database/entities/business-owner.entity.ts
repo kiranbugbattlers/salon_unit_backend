@@ -106,7 +106,7 @@ export class BusinessOwner {
     name: 'vendor_status',
     type: 'enum',
     enum: VendorStatus,
-    default: VendorStatus.HOLD_ACCOUNT,
+    default: VendorStatus.ACTIVE,
   })
   vendorStatus: VendorStatus;
 
@@ -163,15 +163,9 @@ export class BusinessOwner {
   }
 
   @BeforeUpdate()
-  updateVendorStatusOnApproval() {
-    // Only change vendor status based on approval status
-    // This ensures payments and due status don't affect vendor status
-    if (this.isApproved !== undefined) {
-      if (this.isApproved && this.vendorStatus !== VendorStatus.ACTIVE) {
-        this.vendorStatus = VendorStatus.ACTIVE;
-      } else if (!this.isApproved && this.vendorStatus === VendorStatus.ACTIVE) {
-        this.vendorStatus = VendorStatus.HOLD_ACCOUNT;
-      }
-    }
+  preserveVendorStatus() {
+    // Vendor status should NOT change automatically based on approval status
+    // Only admin can manually change vendor status
+    // This ensures vendors remain active regardless of payment status
   }
 }

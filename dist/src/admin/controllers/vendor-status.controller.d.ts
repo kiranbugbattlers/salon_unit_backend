@@ -9,5 +9,4 @@ export declare class VendorStatusController {
         status: VendorStatus;
         adminRemarks?: string;
     }): Promise<any>;
-    syncVendorStatusWithApproval(businessOwnerId: string): Promise<any>;
 }

@@ -52,7 +52,7 @@ let VendorCreditManagementService = class VendorCreditManagementService {
             newCreditLimit: parseFloat(updatedVendor.creditLimit.toFixed(2)),
             accountStatus: updatedVendor.vendorStatus,
             isActive: updatedVendor.isActive,
-            reason: addCreditDto.reason || 'Credit points added by admin - account activated',
+            reason: addCreditDto.reason || 'Credit points added by admin - vendor account activated',
             activatedAt: updatedVendor.updatedAt,
         };
     }
@@ -64,29 +64,22 @@ let VendorCreditManagementService = class VendorCreditManagementService {
             ],
             relations: ['user'],
         });
-        const updatedVendors = [];
-        for (const vendor of overdueVendors) {
-            if (vendor.vendorStatus !== vendor_status_enum_1.VendorStatus.INACTIVE) {
-                vendor.vendorStatus = vendor_status_enum_1.VendorStatus.INACTIVE;
-                vendor.isActive = false;
-                await this.businessOwnerRepository.save(vendor);
-                updatedVendors.push({
-                    id: vendor.id,
-                    shopId: vendor.shopId,
-                    businessName: vendor.businessName,
-                    ownerName: vendor.firstName && vendor.lastName
-                        ? `${vendor.firstName} ${vendor.lastName}`.trim()
-                        : vendor.businessName || 'N/A',
-                    previousStatus: vendor.vendorStatus,
-                    newStatus: vendor_status_enum_1.VendorStatus.INACTIVE,
-                    creditLimit: vendor.creditLimit || 0,
-                    markedOverdueAt: new Date(),
-                });
-            }
-        }
+        const overdueInfo = overdueVendors.map(vendor => ({
+            id: vendor.id,
+            shopId: vendor.shopId,
+            businessName: vendor.businessName,
+            ownerName: vendor.firstName && vendor.lastName
+                ? `${vendor.firstName} ${vendor.lastName}`.trim()
+                : vendor.businessName || 'N/A',
+            currentStatus: vendor.vendorStatus,
+            creditLimit: vendor.creditLimit || 0,
+            isOverdue: (vendor.creditLimit || 0) <= 0,
+            note: 'Vendor status remains unchanged - only admin can modify vendor status',
+        }));
         return {
-            totalOverdue: updatedVendors.length,
-            vendors: updatedVendors,
+            totalOverdue: overdueInfo.length,
+            vendors: overdueInfo,
+            message: 'Vendor status check completed - no automatic changes made',
         };
     }
     async getVendorCreditInfo(businessOwnerId) {
@@ -151,27 +144,21 @@ let VendorCreditManagementService = class VendorCreditManagementService {
             throw new common_1.NotFoundException('Vendor not found');
         }
         const previousStatus = vendor.vendorStatus;
-        if (statusDto.status === 'active') {
-            vendor.vendorStatus = vendor_status_enum_1.VendorStatus.ACTIVE;
-            vendor.isActive = true;
-        }
-        else if (statusDto.status === 'overdue' || statusDto.status === 'suspended') {
-            vendor.vendorStatus = vendor_status_enum_1.VendorStatus.INACTIVE;
-            vendor.isActive = false;
-        }
-        const updatedVendor = await this.businessOwnerRepository.save(vendor);
+        console.log(`DEPRECATED: updateVendorCreditStatus called for vendor ${businessOwnerId}. ` +
+            `Requested status: ${statusDto.status}. Vendor status remains ${previousStatus} - ` +
+            'only admin can manually change vendor status.');
         return {
-            id: updatedVendor.id,
-            shopId: updatedVendor.shopId,
-            businessName: updatedVendor.businessName,
-            ownerName: updatedVendor.firstName && updatedVendor.lastName
-                ? `${updatedVendor.firstName} ${updatedVendor.lastName}`.trim()
-                : updatedVendor.businessName || 'N/A',
+            id: vendor.id,
+            shopId: vendor.shopId,
+            businessName: vendor.businessName,
+            ownerName: vendor.firstName && vendor.lastName
+                ? `${vendor.firstName} ${vendor.lastName}`.trim()
+                : vendor.businessName || 'N/A',
             previousStatus,
-            newStatus: updatedVendor.vendorStatus,
-            isActive: updatedVendor.isActive,
-            notes: statusDto.notes || `Status updated by admin`,
-            updatedAt: updatedVendor.updatedAt,
+            newStatus: previousStatus,
+            isActive: vendor.isActive,
+            notes: `Status change request ignored - vendor status remains ${previousStatus}. Only admin can manually change vendor status.`,
+            updatedAt: vendor.updatedAt,
         };
     }
     async getAllVendorsCreditStatus() {
