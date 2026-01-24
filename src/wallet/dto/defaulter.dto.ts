@@ -84,11 +84,8 @@ export class ManualDefaulterActionDto {
 }
 
 export class CheckDefaultersResponseDto {
-  @ApiProperty({ description: 'Number of newly marked defaulters' })
-  newDefaulters: number;
-
-  @ApiProperty({ description: 'Number of businesses already marked' })
-  alreadyDefaulters: number;
+  @ApiProperty({ description: 'Number of admin notifications sent' })
+  notifiedCount: number;
 
   @ApiProperty({ description: 'Total negative wallet count' })
   totalNegativeWallets: number;

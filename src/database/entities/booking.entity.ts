@@ -192,7 +192,7 @@ export class Booking {
   @OneToMany(() => BookingService, (bookingService) => bookingService.booking)
   bookingServices: BookingService[];
 
-  @OneToMany('Review', 'booking', {
+  @OneToMany(() => Review, (review) => review.booking, {
     cascade: true
   })
   reviews: Review[];

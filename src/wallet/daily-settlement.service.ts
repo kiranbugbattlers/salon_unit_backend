@@ -9,6 +9,7 @@ import {
   BusinessAddress,
   User,
   PaymentMethodType,
+  CommissionConfig,
 } from '../database/entities';
 import { BookingStatus } from '../common/enums';
 
@@ -17,8 +18,9 @@ export class DailySettlementService {
   private readonly logger = new Logger(DailySettlementService.name);
   
   // Commission rates
-  private readonly COMMISSION_PERCENT = 8.00;
-  private readonly GST_PERCENT = 18.00;
+  // These should be fetched from CommissionConfig, but defaults are kept here as fallback
+  private readonly DEFAULT_COMMISSION_PERCENT = 8.00;
+  private readonly DEFAULT_GST_PERCENT = 18.00;
 
   constructor(
     @InjectRepository(DailySettlement)
@@ -29,8 +31,30 @@ export class DailySettlementService {
     private readonly businessOwnerRepository: Repository<BusinessOwner>,
     @InjectRepository(BusinessAddress)
     private readonly businessAddressRepository: Repository<BusinessAddress>,
+    @InjectRepository(CommissionConfig)
+    private readonly commissionConfigRepository: Repository<CommissionConfig>,
     private readonly dataSource: DataSource,
   ) {}
+
+  /**
+   * Get active commission config
+   */
+  private async getCommissionConfig(date: Date = new Date()): Promise<{ commissionPercent: number; gstPercent: number }> {
+    const config = await this.commissionConfigRepository.findOne({
+      where: {
+        isActive: true,
+        effectiveFrom: LessThanOrEqual(date),
+      },
+      order: {
+        effectiveFrom: 'DESC',
+      },
+    });
+
+    return {
+      commissionPercent: config ? Number(config.businessOwnerCommissionPercent) : this.DEFAULT_COMMISSION_PERCENT,
+      gstPercent: this.DEFAULT_GST_PERCENT, // GST is currently not in config, keeping default
+    };
+  }
 
   /**
    * Get all approved businesses with their calculated settlement data
@@ -101,6 +125,10 @@ export class DailySettlementService {
       totalSettlementAmount: 0,
     };
 
+    // Get active commission config for the period
+    const configDate = endOfRange || new Date();
+    const { commissionPercent, gstPercent } = await this.getCommissionConfig(configDate);
+
     for (const business of allBusinesses) {
       // Get booking stats for this business and date range
       let statsQuery = this.bookingRepository
@@ -148,8 +176,8 @@ export class DailySettlementService {
       const totalOnlineAmount = parseFloat(stats.online) || 0;
 
       // Calculate financials
-      const commissionAmount = (totalTransactionsAmount * this.COMMISSION_PERCENT) / 100;
-      const gstAmount = (commissionAmount * this.GST_PERCENT) / 100;
+      const commissionAmount = (totalTransactionsAmount * commissionPercent) / 100;
+      const gstAmount = (commissionAmount * gstPercent) / 100;
       const totalDeduction = commissionAmount + gstAmount;
       // Settlement is what Admin owes Vendor. Admin holds Online money.
       const settlementAmount = totalOnlineAmount - totalDeduction;
@@ -191,9 +219,9 @@ export class DailySettlementService {
         totalTransactionsAmount,
         totalCashAmount,
         totalOnlineAmount,
-        commissionPercent: this.COMMISSION_PERCENT,
+        commissionPercent: commissionPercent,
         commissionAmount: Math.round(commissionAmount * 100) / 100,
-        gstPercent: this.GST_PERCENT,
+        gstPercent: gstPercent,
         gstAmount: Math.round(gstAmount * 100) / 100,
         totalDeduction: Math.round(totalDeduction * 100) / 100,
         settlementAmount: Math.round(settlementAmount * 100) / 100,
@@ -312,18 +340,22 @@ export class DailySettlementService {
       });
     }
 
+    // Get active commission config
+    const configDate = filters?.endDate ? new Date(filters.endDate) : new Date();
+    const { commissionPercent, gstPercent } = await this.getCommissionConfig(configDate);
+
     const summaryResult = await summaryQuery.getRawOne();
     const totalTransactionsAmount = parseFloat(summaryResult.total) || 0;
-    const commissionAmount = (totalTransactionsAmount * this.COMMISSION_PERCENT) / 100;
-    const gstAmount = (commissionAmount * this.GST_PERCENT) / 100;
+    const commissionAmount = (totalTransactionsAmount * commissionPercent) / 100;
+    const gstAmount = (commissionAmount * gstPercent) / 100;
     const totalDeduction = commissionAmount + gstAmount;
     const settlementAmount = totalTransactionsAmount - totalDeduction;
 
     // Build history records
     const history = bookings.map(booking => {
       const amount = Number(booking.totalAmount) || 0;
-      const commission = (amount * this.COMMISSION_PERCENT) / 100;
-      const gst = (commission * this.GST_PERCENT) / 100;
+      const commission = (amount * commissionPercent) / 100;
+      const gst = (commission * gstPercent) / 100;
       const deduction = commission + gst;
       const settlement = amount - deduction;
 
@@ -489,9 +521,13 @@ export class DailySettlementService {
 
     this.logger.log(`Calculated totals: Count=${totalTransactionsCount}, Amount=${totalTransactionsAmount}`);
 
-    // Commission calculation: 8% + 18% GST on commission
-    const commissionAmount = (totalTransactionsAmount * this.COMMISSION_PERCENT) / 100;
-    const gstAmount = (commissionAmount * this.GST_PERCENT) / 100;
+    // Get active commission config
+    const configDate = endRange || new Date();
+    const { commissionPercent, gstPercent } = await this.getCommissionConfig(configDate);
+
+    // Commission calculation: based on config
+    const commissionAmount = (totalTransactionsAmount * commissionPercent) / 100;
+    const gstAmount = (commissionAmount * gstPercent) / 100;
     const totalDeduction = commissionAmount + gstAmount;
     const settlementAmount = totalOnlineAmount - totalDeduction;
 
@@ -530,9 +566,9 @@ export class DailySettlementService {
         totalTransactionsAmount: Math.round(totalTransactionsAmount * 100) / 100,
         totalCashAmount: Math.round(totalCashAmount * 100) / 100,
         totalOnlineAmount: Math.round(totalOnlineAmount * 100) / 100,
-        commissionPercent: this.COMMISSION_PERCENT,
+        commissionPercent: commissionPercent,
         commissionAmount: Math.round(commissionAmount * 100) / 100,
-        gstPercent: this.GST_PERCENT,
+        gstPercent: gstPercent,
         gstAmount: Math.round(gstAmount * 100) / 100,
         totalDeduction: Math.round(totalDeduction * 100) / 100,
         settlementAmount: Math.round(settlementAmount * 100) / 100,
@@ -645,8 +681,11 @@ export class DailySettlementService {
       const totalCashAmount = parseFloat(stats.cash) || 0;
       const totalOnlineAmount = parseFloat(stats.online) || 0;
       
-      const commissionAmount = (totalAmount * this.COMMISSION_PERCENT) / 100;
-      const gstAmount = (commissionAmount * this.GST_PERCENT) / 100;
+      // Get active commission config
+      const { commissionPercent, gstPercent } = await this.getCommissionConfig(settlementDate);
+      
+      const commissionAmount = (totalAmount * commissionPercent) / 100;
+      const gstAmount = (commissionAmount * gstPercent) / 100;
       const totalDeduction = commissionAmount + gstAmount;
       const settlementAmount = totalOnlineAmount - totalDeduction;
 
@@ -675,9 +714,9 @@ export class DailySettlementService {
         totalTransactionsAmount: totalAmount,
         totalCashAmount,
         totalOnlineAmount,
-        commissionPercent: this.COMMISSION_PERCENT,
+        commissionPercent: commissionPercent,
         commissionAmount,
-        gstPercent: this.GST_PERCENT,
+        gstPercent: gstPercent,
         gstAmount,
         totalDeduction,
         settlementAmount,
@@ -791,9 +830,12 @@ export class DailySettlementService {
       0,
     );
 
-    // Commission calculation: 8% + 18% GST on commission
-    const commissionAmount = (totalTransactionsAmount * this.COMMISSION_PERCENT) / 100;
-    const gstAmount = (commissionAmount * this.GST_PERCENT) / 100;
+    // Get active commission config
+    const { commissionPercent, gstPercent } = await this.getCommissionConfig(date);
+
+    // Commission calculation: based on config
+    const commissionAmount = (totalTransactionsAmount * commissionPercent) / 100;
+    const gstAmount = (commissionAmount * gstPercent) / 100;
     const totalDeduction = commissionAmount + gstAmount;
     const settlementAmount = totalOnlineAmount - totalDeduction;
 
@@ -831,9 +873,9 @@ export class DailySettlementService {
       existing.totalTransactionsAmount = totalTransactionsAmount;
       existing.totalCashAmount = totalCashAmount;
       existing.totalOnlineAmount = totalOnlineAmount;
-      existing.commissionPercent = this.COMMISSION_PERCENT;
+      existing.commissionPercent = commissionPercent;
       existing.commissionAmount = commissionAmount;
-      existing.gstPercent = this.GST_PERCENT;
+      existing.gstPercent = gstPercent;
       existing.gstAmount = gstAmount;
       existing.totalDeduction = totalDeduction;
       existing.settlementAmount = settlementAmount;
@@ -852,9 +894,9 @@ export class DailySettlementService {
         address,
         totalTransactionsCount,
         totalTransactionsAmount,
-        commissionPercent: this.COMMISSION_PERCENT,
+        commissionPercent: commissionPercent,
         commissionAmount,
-        gstPercent: this.GST_PERCENT,
+        gstPercent: gstPercent,
         gstAmount,
         totalDeduction,
         settlementAmount,

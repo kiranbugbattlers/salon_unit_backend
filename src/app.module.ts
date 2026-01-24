@@ -1,4 +1,4 @@
-import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import 'reflect-metadata';
@@ -27,11 +27,9 @@ import { AdvertisementModule } from './advertisement/advertisement.module';
 import { SupportMemberModule } from './support-member/support-member.module';
 import { WalletModule } from './wallet/wallet.module';
 import { NotificationModule } from './notification/notification.module';
-import { ReviewModule } from './review/review.module';
 
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
-import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
 
 import * as entities from './database/entities';
 
@@ -116,16 +114,13 @@ import * as entities from './database/entities';
             entities.CommissionPayment,
             entities.DailySettlement,
             entities.VendorDuePayment,
-            entities.BusinessOwnerTransactionHistory,
-            entities.UserBookingHistory,
-            entities.VendorPaymentSummary,
             entities.BusinessDocument,
             entities.DeviceToken,
             entities.NotificationLog,
             entities.ScheduledNotification,
           ],
-          synchronize: false,
-          logging: false, // Disabled to keep terminal clean - only API calls will be shown
+          synchronize: configService.get('app.environment') === 'development',
+          logging: configService.get('app.environment') === 'development',
           ssl: isSupabase ? { rejectUnauthorized: false } : false,
           extra: isSupabase ? {
             ssl: {
@@ -155,7 +150,6 @@ import * as entities from './database/entities';
     SupportMemberModule,
     WalletModule,
     NotificationModule,
-    ReviewModule,
   ],
   providers: [
     DatabaseService,
@@ -170,8 +164,4 @@ import * as entities from './database/entities';
     },
   ],
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer.apply(RequestLoggerMiddleware).forRoutes('*');
-  }
-}
+export class AppModule {}

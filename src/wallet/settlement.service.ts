@@ -48,6 +48,15 @@ export class SettlementService {
    * Called by cron job on 1st of every month
    */
   async generateMonthlySettlement(businessOwnerId: string, month: string): Promise<MonthlySettlement> {
+    // Validate/sanitize month format (YYYY-MM)
+    if (!/^\d{4}-\d{2}$/.test(month)) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(month)) {
+        month = month.substring(0, 7);
+      } else {
+        throw new Error(`Invalid month format: ${month}. Expected YYYY-MM`);
+      }
+    }
+
     return await this.dataSource.transaction(async (transactionalEntityManager) => {
       // Check if settlement already exists
       const existingSettlement = await transactionalEntityManager.findOne(MonthlySettlement, {
