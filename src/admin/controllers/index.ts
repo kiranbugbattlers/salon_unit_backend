@@ -6,3 +6,4 @@ export * from './admin-vendor.controller';
 export * from './admin-settlement.controller';
 export * from './admin-due-payments.controller';
 export * from './vendor-status.controller';
+export * from './business-owner-transaction-history.controller';

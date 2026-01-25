@@ -28,6 +28,7 @@ import { SupportMemberModule } from './support-member/support-member.module';
 import { WalletModule } from './wallet/wallet.module';
 import { NotificationModule } from './notification/notification.module';
 import { ReviewModule } from './review/review.module';
+import { BookingHistoryModule } from './booking-history/booking-history.module';
 
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
@@ -118,6 +119,7 @@ import * as entities from './database/entities';
             entities.VendorDuePayment,
             entities.BusinessOwnerTransactionHistory,
             entities.UserBookingHistory,
+           
             entities.VendorPaymentSummary,
             entities.BusinessDocument,
             entities.DeviceToken,
@@ -156,6 +158,8 @@ import * as entities from './database/entities';
     WalletModule,
     NotificationModule,
     ReviewModule,
+    BookingHistoryModule,
+ 
   ],
   providers: [
     DatabaseService,

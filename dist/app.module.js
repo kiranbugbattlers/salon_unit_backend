@@ -71,6 +71,7 @@ const support_member_module_1 = require("./support-member/support-member.module"
 const wallet_module_1 = require("./wallet/wallet.module");
 const notification_module_1 = require("./notification/notification.module");
 const review_module_1 = require("./review/review.module");
+const booking_history_module_1 = require("./booking-history/booking-history.module");
 const jwt_auth_guard_1 = require("./common/guards/jwt-auth.guard");
 const roles_guard_1 = require("./common/guards/roles.guard");
 const request_logger_middleware_1 = require("./common/middleware/request-logger.middleware");
@@ -199,6 +200,7 @@ exports.AppModule = AppModule = __decorate([
             wallet_module_1.WalletModule,
             notification_module_1.NotificationModule,
             review_module_1.ReviewModule,
+            booking_history_module_1.BookingHistoryModule,
         ],
         providers: [
             database_service_1.DatabaseService,

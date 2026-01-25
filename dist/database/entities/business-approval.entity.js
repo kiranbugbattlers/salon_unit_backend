@@ -59,15 +59,25 @@ __decorate([
 ], BusinessApproval.prototype, "reviewNotes", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ required: false }),
-    (0, typeorm_1.Column)({ name: 'admin_remarks', type: 'text', nullable: true }),
-    __metadata("design:type", String)
-], BusinessApproval.prototype, "adminRemarks", void 0);
-__decorate([
-    (0, swagger_1.ApiProperty)({ required: false }),
     (0, typeorm_1.Column)({ name: 'rejection_reason', type: 'text', nullable: true }),
     __metadata("design:type", String)
 ], BusinessApproval.prototype, "rejectionReason", void 0);
 __decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'UPI ID of the business owner',
+        example: 'businessowner@upi',
+        required: false
+    }),
+    (0, swagger_1.ApiProperty)({
+        description: 'Credit limit assigned to the vendor',
+        example: 50000.00,
+        required: false
+    }),
+    (0, swagger_1.ApiProperty)({
+        description: 'Vendor status',
+        example: 'active',
+        required: false
+    }),
     (0, swagger_1.ApiProperty)(),
     (0, typeorm_1.Column)({ name: 'is_auto_assigned', default: true }),
     __metadata("design:type", Boolean)

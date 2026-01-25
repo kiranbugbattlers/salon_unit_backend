@@ -58,4 +58,22 @@ export class ApprovalRequestDto {
 
   @ApiProperty()
   updatedAt: Date;
+
+  @ApiProperty({ 
+    description: 'UPI ID of the business owner',
+    required: false
+  })
+  upiId?: string;
+
+  @ApiProperty({ 
+    description: 'Credit limit assigned to the vendor',
+    required: false
+  })
+  creditLimit?: number;
+
+  @ApiProperty({ 
+    description: 'Vendor status',
+    required: false
+  })
+  vendorStatus?: string;
 }

@@ -9,7 +9,6 @@ export declare class BusinessApproval {
     assignedByAdminId?: string;
     status: ApprovalStatus;
     reviewNotes?: string;
-    adminRemarks?: string;
     rejectionReason?: string;
     isAutoAssigned: boolean;
     distanceToAgentKm?: number;

@@ -21,14 +21,4 @@ export class ApproveBusinessDto {
   @IsNumber()
   @Min(0)
   creditLimit?: number;
-
-  @ApiProperty({
-    description: 'Admin remarks about the vendor approval',
-    example: 'Approved with standard credit terms',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  @MaxLength(1000)
-  adminRemarks?: string;
 }

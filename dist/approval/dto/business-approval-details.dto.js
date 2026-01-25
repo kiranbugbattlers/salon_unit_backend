@@ -234,6 +234,27 @@ __decorate([
     (0, swagger_1.ApiProperty)({ description: 'Created at' }),
     __metadata("design:type", Date)
 ], BusinessOwnerInfoDto.prototype, "createdAt", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'UPI ID of the business owner',
+        required: false
+    }),
+    __metadata("design:type", String)
+], BusinessOwnerInfoDto.prototype, "upiId", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Credit limit assigned to the vendor',
+        required: false
+    }),
+    __metadata("design:type", Number)
+], BusinessOwnerInfoDto.prototype, "creditLimit", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Vendor status',
+        required: false
+    }),
+    __metadata("design:type", String)
+], BusinessOwnerInfoDto.prototype, "vendorStatus", void 0);
 class BusinessInfoDto {
 }
 exports.BusinessInfoDto = BusinessInfoDto;
@@ -442,4 +463,32 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateBusinessApprovalDto.prototype, "rejectionReason", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'UPI ID of the business owner',
+        required: false
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateBusinessApprovalDto.prototype, "upiId", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Credit limit assigned to the vendor',
+        required: false
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], UpdateBusinessApprovalDto.prototype, "creditLimit", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Vendor status',
+        required: false
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateBusinessApprovalDto.prototype, "vendorStatus", void 0);
 //# sourceMappingURL=business-approval-details.dto.js.map

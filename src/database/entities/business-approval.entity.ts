@@ -45,12 +45,32 @@ export class BusinessApproval {
   reviewNotes?: string;
 
   @ApiProperty({ required: false })
-  @Column({ name: 'admin_remarks', type: 'text', nullable: true })
-  adminRemarks?: string;
-
-  @ApiProperty({ required: false })
   @Column({ name: 'rejection_reason', type: 'text', nullable: true })
   rejectionReason?: string;
+
+  @ApiProperty({ 
+    description: 'UPI ID of the business owner',
+    example: 'businessowner@upi',
+    required: false
+  })
+  // @Column({ name: 'upi_id', length: 100, nullable: true })
+  // upiId?: string;
+
+  @ApiProperty({ 
+    description: 'Credit limit assigned to the vendor',
+    example: 50000.00,
+    required: false
+  })
+  // @Column({ name: 'credit_limit', type: 'decimal', precision: 12, scale: 2, nullable: true })
+  // creditLimit?: number;
+
+  @ApiProperty({ 
+    description: 'Vendor status',
+    example: 'active',
+    required: false
+  })
+  // @Column({ name: 'vendor_status', length: 50, nullable: true })
+  // vendorStatus?: string;
 
   @ApiProperty()
   @Column({ name: 'is_auto_assigned', default: true })

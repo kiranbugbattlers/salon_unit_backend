@@ -165,6 +165,24 @@ export class BusinessOwnerInfoDto {
 
   @ApiProperty({ description: 'Created at' })
   createdAt: Date;
+
+  @ApiProperty({ 
+    description: 'UPI ID of the business owner',
+    required: false
+  })
+  upiId?: string;
+
+  @ApiProperty({ 
+    description: 'Credit limit assigned to the vendor',
+    required: false
+  })
+  creditLimit?: number;
+
+  @ApiProperty({ 
+    description: 'Vendor status',
+    required: false
+  })
+  vendorStatus?: string;
 }
 
 export class BusinessInfoDto {
@@ -337,4 +355,29 @@ export class UpdateBusinessApprovalDto {
   @IsOptional()
   @IsString()
   rejectionReason?: string;
+
+  @ApiProperty({ 
+    description: 'UPI ID of the business owner',
+    required: false
+  })
+  @IsOptional()
+  @IsString()
+  upiId?: string;
+
+  @ApiProperty({ 
+    description: 'Credit limit assigned to the vendor',
+    required: false
+  })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  creditLimit?: number;
+
+  @ApiProperty({ 
+    description: 'Vendor status',
+    required: false
+  })
+  @IsOptional()
+  @IsString()
+  vendorStatus?: string;
 }

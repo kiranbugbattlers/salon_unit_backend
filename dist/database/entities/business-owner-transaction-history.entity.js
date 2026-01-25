@@ -48,10 +48,13 @@ let BusinessOwnerTransactionHistory = class BusinessOwnerTransactionHistory {
 };
 exports.BusinessOwnerTransactionHistory = BusinessOwnerTransactionHistory;
 __decorate([
-    (0, swagger_1.ApiProperty)(),
+    (0, swagger_1.ApiProperty)({
+        description: 'Unique transaction ID',
+        example: '123e4567-e89b-12d3-a456-426614174000'
+    }),
     (0, typeorm_1.PrimaryGeneratedColumn)('uuid'),
     __metadata("design:type", String)
-], BusinessOwnerTransactionHistory.prototype, "id", void 0);
+], BusinessOwnerTransactionHistory.prototype, "transactionId", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ description: 'Business owner ID' }),
     (0, typeorm_1.Column)({ name: 'business_owner_id' }),
@@ -63,12 +66,28 @@ __decorate([
     __metadata("design:type", Date)
 ], BusinessOwnerTransactionHistory.prototype, "transactionDate", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: 'Transaction amount' }),
+    (0, swagger_1.ApiProperty)({ description: 'Previous balance before transaction' }),
+    (0, typeorm_1.Column)({ name: 'previous_balance', type: 'decimal', precision: 12, scale: 2 }),
+    __metadata("design:type", Number)
+], BusinessOwnerTransactionHistory.prototype, "previousBalance", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Transaction amount (+ for Credit, - for Debit)',
+        example: 150.00
+    }),
     (0, typeorm_1.Column)({ name: 'transaction_amount', type: 'decimal', precision: 12, scale: 2 }),
     __metadata("design:type", Number)
 ], BusinessOwnerTransactionHistory.prototype, "transactionAmount", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ enum: TransactionType, description: 'Transaction type (credit/debit)' }),
+    (0, swagger_1.ApiProperty)({ description: 'Current balance after transaction' }),
+    (0, typeorm_1.Column)({ name: 'current_balance', type: 'decimal', precision: 12, scale: 2 }),
+    __metadata("design:type", Number)
+], BusinessOwnerTransactionHistory.prototype, "currentBalance", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        enum: TransactionType,
+        description: 'Transaction Type: Credit / Debit'
+    }),
     (0, typeorm_1.Column)({
         name: 'transaction_type',
         type: 'enum',
@@ -77,17 +96,10 @@ __decorate([
     __metadata("design:type", String)
 ], BusinessOwnerTransactionHistory.prototype, "transactionType", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: 'Previous balance before transaction' }),
-    (0, typeorm_1.Column)({ name: 'previous_balance', type: 'decimal', precision: 12, scale: 2 }),
-    __metadata("design:type", Number)
-], BusinessOwnerTransactionHistory.prototype, "previousBalance", void 0);
-__decorate([
-    (0, swagger_1.ApiProperty)({ description: 'Remaining balance after transaction' }),
-    (0, typeorm_1.Column)({ name: 'remaining_balance', type: 'decimal', precision: 12, scale: 2 }),
-    __metadata("design:type", Number)
-], BusinessOwnerTransactionHistory.prototype, "remainingBalance", void 0);
-__decorate([
-    (0, swagger_1.ApiProperty)({ enum: TransactionStatus, description: 'Transaction status' }),
+    (0, swagger_1.ApiProperty)({
+        enum: TransactionStatus,
+        description: 'Status: Success / Pending / Failed'
+    }),
     (0, typeorm_1.Column)({
         name: 'status',
         type: 'enum',
@@ -97,20 +109,10 @@ __decorate([
     __metadata("design:type", String)
 ], BusinessOwnerTransactionHistory.prototype, "status", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ enum: PaymentMethod, description: 'Payment method' }),
-    (0, typeorm_1.Column)({
-        name: 'payment_method',
-        type: 'enum',
-        enum: PaymentMethod,
-        nullable: true,
-    }),
+    (0, swagger_1.ApiProperty)({ description: 'Transaction remark' }),
+    (0, typeorm_1.Column)({ name: 'remark', type: 'text', nullable: true }),
     __metadata("design:type", String)
-], BusinessOwnerTransactionHistory.prototype, "paymentMethod", void 0);
-__decorate([
-    (0, swagger_1.ApiProperty)({ description: 'Transaction remarks' }),
-    (0, typeorm_1.Column)({ name: 'remarks', type: 'text', nullable: true }),
-    __metadata("design:type", String)
-], BusinessOwnerTransactionHistory.prototype, "remarks", void 0);
+], BusinessOwnerTransactionHistory.prototype, "remark", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ description: 'Related booking ID' }),
     (0, typeorm_1.Column)({ name: 'related_booking_id', nullable: true }),

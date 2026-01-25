@@ -37,15 +37,4 @@ __decorate([
     (0, class_validator_1.Min)(0),
     __metadata("design:type", Number)
 ], ApproveBusinessDto.prototype, "creditLimit", void 0);
-__decorate([
-    (0, swagger_1.ApiProperty)({
-        description: 'Admin remarks about the vendor approval',
-        example: 'Approved with standard credit terms',
-        required: false,
-    }),
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.MaxLength)(1000),
-    __metadata("design:type", String)
-], ApproveBusinessDto.prototype, "adminRemarks", void 0);
 //# sourceMappingURL=approve-business.dto.js.map

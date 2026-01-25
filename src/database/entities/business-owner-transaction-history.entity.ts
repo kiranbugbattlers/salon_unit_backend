@@ -34,9 +34,12 @@ export enum PaymentMethod {
 
 @Entity('business_owner_transaction_history')
 export class BusinessOwnerTransactionHistory {
-  @ApiProperty()
+  @ApiProperty({
+    description: 'Unique transaction ID',
+    example: '123e4567-e89b-12d3-a456-426614174000'
+  })
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  transactionId: string;
 
   @ApiProperty({ description: 'Business owner ID' })
   @Column({ name: 'business_owner_id' })
@@ -46,11 +49,25 @@ export class BusinessOwnerTransactionHistory {
   @Column({ name: 'transaction_date', type: 'timestamp' })
   transactionDate: Date;
 
-  @ApiProperty({ description: 'Transaction amount' })
+  @ApiProperty({ description: 'Previous balance before transaction' })
+  @Column({ name: 'previous_balance', type: 'decimal', precision: 12, scale: 2 })
+  previousBalance: number;
+
+  @ApiProperty({ 
+    description: 'Transaction amount (+ for Credit, - for Debit)',
+    example: 150.00
+  })
   @Column({ name: 'transaction_amount', type: 'decimal', precision: 12, scale: 2 })
   transactionAmount: number;
 
-  @ApiProperty({ enum: TransactionType, description: 'Transaction type (credit/debit)' })
+  @ApiProperty({ description: 'Current balance after transaction' })
+  @Column({ name: 'current_balance', type: 'decimal', precision: 12, scale: 2 })
+  currentBalance: number;
+
+  @ApiProperty({ 
+    enum: TransactionType, 
+    description: 'Transaction Type: Credit / Debit' 
+  })
   @Column({
     name: 'transaction_type',
     type: 'enum',
@@ -58,15 +75,10 @@ export class BusinessOwnerTransactionHistory {
   })
   transactionType: TransactionType;
 
-  @ApiProperty({ description: 'Previous balance before transaction' })
-  @Column({ name: 'previous_balance', type: 'decimal', precision: 12, scale: 2 })
-  previousBalance: number;
-
-  @ApiProperty({ description: 'Remaining balance after transaction' })
-  @Column({ name: 'remaining_balance', type: 'decimal', precision: 12, scale: 2 })
-  remainingBalance: number;
-
-  @ApiProperty({ enum: TransactionStatus, description: 'Transaction status' })
+  @ApiProperty({ 
+    enum: TransactionStatus, 
+    description: 'Status: Success / Pending / Failed' 
+  })
   @Column({
     name: 'status',
     type: 'enum',
@@ -75,18 +87,9 @@ export class BusinessOwnerTransactionHistory {
   })
   status: TransactionStatus;
 
-  @ApiProperty({ enum: PaymentMethod, description: 'Payment method' })
-  @Column({
-    name: 'payment_method',
-    type: 'enum',
-    enum: PaymentMethod,
-    nullable: true,
-  })
-  paymentMethod?: PaymentMethod;
-
-  @ApiProperty({ description: 'Transaction remarks' })
-  @Column({ name: 'remarks', type: 'text', nullable: true })
-  remarks?: string;
+  @ApiProperty({ description: 'Transaction remark' })
+  @Column({ name: 'remark', type: 'text', nullable: true })
+  remark?: string;
 
   @ApiProperty({ description: 'Related booking ID' })
   @Column({ name: 'related_booking_id', nullable: true })

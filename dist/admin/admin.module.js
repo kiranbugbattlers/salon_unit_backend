@@ -31,6 +31,8 @@ exports.AdminModule = AdminModule = __decorate([
                 entities_1.Payment,
                 entities_1.CommissionTransaction,
                 entities_1.VendorDuePayment,
+                entities_1.Wallet,
+                entities_1.WalletTransaction,
             ]),
             wallet_module_1.WalletModule,
         ],
@@ -43,6 +45,7 @@ exports.AdminModule = AdminModule = __decorate([
             controllers_1.AdminSettlementController,
             controllers_1.AdminDuePaymentsController,
             controllers_1.AdminVendorController,
+            controllers_1.BusinessOwnerTransactionHistoryController,
         ],
         providers: [
             services_1.ServiceCategoryService,
@@ -50,6 +53,7 @@ exports.AdminModule = AdminModule = __decorate([
             services_1.AdminBookingService,
             services_1.VendorStatusService,
             services_1.VendorCreditManagementService,
+            services_1.BusinessOwnerTransactionHistoryService,
             s3_service_1.S3Service,
         ],
         exports: [

@@ -270,7 +270,7 @@ export class AdminDuePaymentsController {
       }
     );
 
-    // Log the credit limit assignment
+    // Log the credit limit assignment/admin/vendors/:id/credit
     this.logger.log(
       `Credit limit set for business owner ${businessOwnerId}: ` +
       `₹${previousCreditLimit} → ₹${setCreditDto.creditLimit} ${setCreditDto.remarks ? `(${setCreditDto.remarks})` : ''}`

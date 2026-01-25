@@ -22,4 +22,5 @@ __exportStar(require("./admin-vendor.controller"), exports);
 __exportStar(require("./admin-settlement.controller"), exports);
 __exportStar(require("./admin-due-payments.controller"), exports);
 __exportStar(require("./vendor-status.controller"), exports);
+__exportStar(require("./business-owner-transaction-history.controller"), exports);
 //# sourceMappingURL=index.js.map

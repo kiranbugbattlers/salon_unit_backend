@@ -11,6 +11,8 @@ import {
   Payment,
   CommissionTransaction,
   VendorDuePayment,
+  Wallet,
+  WalletTransaction,
 } from '../database/entities';
 import { S3Service } from '../common/services/s3.service';
 import {
@@ -19,6 +21,7 @@ import {
   AdminBookingService,
   VendorStatusService,
   VendorCreditManagementService,
+  BusinessOwnerTransactionHistoryService,
 } from './services';
 import {
   ServiceCategoryController,
@@ -29,6 +32,7 @@ import {
   AdminSettlementController,
   AdminDuePaymentsController,
   AdminVendorController,
+  BusinessOwnerTransactionHistoryController,
 } from './controllers';
 import { WalletModule } from '../wallet/wallet.module';
 
@@ -45,6 +49,8 @@ import { WalletModule } from '../wallet/wallet.module';
       Payment,
       CommissionTransaction,
       VendorDuePayment,
+      Wallet,
+      WalletTransaction,
     ]),
     WalletModule,
   ],
@@ -57,6 +63,7 @@ import { WalletModule } from '../wallet/wallet.module';
     AdminSettlementController,
     AdminDuePaymentsController,
     AdminVendorController,
+    BusinessOwnerTransactionHistoryController,
   ],
   providers: [
     ServiceCategoryService,
@@ -64,6 +71,7 @@ import { WalletModule } from '../wallet/wallet.module';
     AdminBookingService,
     VendorStatusService,
     VendorCreditManagementService,
+    BusinessOwnerTransactionHistoryService,
     S3Service,
   ],
   exports: [

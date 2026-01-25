@@ -361,6 +361,9 @@ let ApprovalService = class ApprovalService {
             reviewedAt: approval.reviewedAt,
             createdAt: approval.createdAt,
             updatedAt: approval.updatedAt,
+            upiId: approval.businessOwner?.upiId,
+            creditLimit: approval.businessOwner?.creditLimit,
+            vendorStatus: approval.businessOwner?.vendorStatus,
         };
     }
     async getBusinessApprovalStatus(businessOwnerId) {
@@ -484,8 +487,13 @@ let ApprovalService = class ApprovalService {
         }
         approval.status = enums_1.ApprovalStatus.APPROVED;
         approval.reviewNotes = approveDto.reviewNotes;
-        approval.adminRemarks = approveDto.adminRemarks;
         approval.reviewedAt = new Date();
+        if (approveDto.creditLimit !== undefined && approveDto.creditLimit !== null) {
+        }
+        if (businessOwner.upiId) {
+        }
+        if (businessOwner.vendorStatus) {
+        }
         await this.approvalRepository.save(approval);
         businessOwner.isApproved = true;
         businessOwner.approvedAt = new Date();
@@ -615,15 +623,20 @@ let ApprovalService = class ApprovalService {
             hasChanges = true;
             console.log('Updated businessDescription');
         }
-        if (updateDto.firstName !== undefined) {
-            businessOwner.firstName = updateDto.firstName;
+        if (updateDto.upiId !== undefined) {
+            businessOwner.upiId = updateDto.upiId;
             hasChanges = true;
-            console.log('Updated firstName to:', updateDto.firstName);
+            console.log('Updated upiId to:', updateDto.upiId);
         }
-        if (updateDto.lastName !== undefined) {
-            businessOwner.lastName = updateDto.lastName;
+        if (updateDto.creditLimit !== undefined) {
+            businessOwner.creditLimit = updateDto.creditLimit;
             hasChanges = true;
-            console.log('Updated lastName to:', updateDto.lastName);
+            console.log('Updated creditLimit to:', updateDto.creditLimit);
+        }
+        if (updateDto.vendorStatus !== undefined) {
+            businessOwner.vendorStatus = updateDto.vendorStatus;
+            hasChanges = true;
+            console.log('Updated vendorStatus to:', updateDto.vendorStatus);
         }
         if (updateDto.businessOwner) {
             const ownerData = updateDto.businessOwner;
@@ -646,6 +659,21 @@ let ApprovalService = class ApprovalService {
                 businessOwner.lastName = ownerData.lastName;
                 hasChanges = true;
                 console.log('Updated lastName (nested) to:', ownerData.lastName);
+            }
+            if (ownerData.upiId !== undefined) {
+                businessOwner.upiId = ownerData.upiId;
+                hasChanges = true;
+                console.log('Updated upiId (nested) to:', ownerData.upiId);
+            }
+            if (ownerData.creditLimit !== undefined) {
+                businessOwner.creditLimit = ownerData.creditLimit;
+                hasChanges = true;
+                console.log('Updated creditLimit (nested) to:', ownerData.creditLimit);
+            }
+            if (ownerData.vendorStatus !== undefined) {
+                businessOwner.vendorStatus = ownerData.vendorStatus;
+                hasChanges = true;
+                console.log('Updated vendorStatus (nested) to:', ownerData.vendorStatus);
             }
         }
         if (updateDto.streetAddress || updateDto.city || updateDto.state || updateDto.pincode || updateDto.address) {
@@ -922,6 +950,9 @@ let ApprovalService = class ApprovalService {
                 isApproved: businessOwner.isApproved,
                 approvedAt: businessOwner.approvedAt,
                 createdAt: businessOwner.createdAt,
+                upiId: approval.upiId || businessOwner.upiId,
+                creditLimit: approval.creditLimit || businessOwner.creditLimit,
+                vendorStatus: approval.vendorStatus || businessOwner.vendorStatus,
             },
             business: {
                 id: businessOwner.id,
@@ -1012,6 +1043,9 @@ let ApprovalService = class ApprovalService {
                 approvedAt: businessOwner.approvedAt,
                 createdAt: businessOwner.createdAt,
                 updatedAt: businessOwner.updatedAt,
+                upiId: businessOwner.upiId,
+                creditLimit: businessOwner.creditLimit,
+                vendorStatus: businessOwner.vendorStatus,
             },
             business: {
                 id: businessOwner.id,

@@ -62,6 +62,9 @@ export declare class BusinessOwnerInfoDto {
     isApproved: boolean;
     approvedAt?: Date;
     createdAt: Date;
+    upiId?: string;
+    creditLimit?: number;
+    vendorStatus?: string;
 }
 export declare class BusinessInfoDto {
     id: string;
@@ -116,4 +119,7 @@ export declare class UpdateBusinessApprovalDto {
     approvalStatus?: string;
     reviewNotes?: string;
     rejectionReason?: string;
+    upiId?: string;
+    creditLimit?: number;
+    vendorStatus?: string;
 }

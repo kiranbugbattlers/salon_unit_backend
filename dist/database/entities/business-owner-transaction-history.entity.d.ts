@@ -19,16 +19,15 @@ export declare enum PaymentMethod {
     BANK_TRANSFER = "bank_transfer"
 }
 export declare class BusinessOwnerTransactionHistory {
-    id: string;
+    transactionId: string;
     businessOwnerId: string;
     transactionDate: Date;
-    transactionAmount: number;
-    transactionType: TransactionType;
     previousBalance: number;
-    remainingBalance: number;
+    transactionAmount: number;
+    currentBalance: number;
+    transactionType: TransactionType;
     status: TransactionStatus;
-    paymentMethod?: PaymentMethod;
-    remarks?: string;
+    remark?: string;
     relatedBookingId?: string;
     createdByAdminId?: string;
     createdAt: Date;

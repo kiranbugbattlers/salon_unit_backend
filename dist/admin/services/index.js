@@ -19,4 +19,5 @@ __exportStar(require("./service.service"), exports);
 __exportStar(require("./admin-booking.service"), exports);
 __exportStar(require("./vendor-status.service"), exports);
 __exportStar(require("./vendor-credit-management.service"), exports);
+__exportStar(require("./business-owner-transaction-history.service"), exports);
 //# sourceMappingURL=index.js.map

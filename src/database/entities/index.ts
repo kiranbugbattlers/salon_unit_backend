@@ -7,6 +7,7 @@ export * from './user-address.entity';
 export { VendorDuePayment } from './vendor-due-payment.entity';
 export { BusinessOwnerTransactionHistory } from './business-owner-transaction-history.entity';
 export { UserBookingHistory } from './user-booking-history.entity';
+
 export { VendorPaymentSummary } from './vendor-payment-summary.entity';
 export { BusinessDocument } from './business-document.entity';
 export * from './customer-onboarding.entity';

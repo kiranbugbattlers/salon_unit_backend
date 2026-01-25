@@ -19,4 +19,7 @@ export declare class ApprovalRequestDto {
     reviewedAt?: Date;
     createdAt: Date;
     updatedAt: Date;
+    upiId?: string;
+    creditLimit?: number;
+    vendorStatus?: string;
 }

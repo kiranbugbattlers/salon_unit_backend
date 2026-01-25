@@ -91,4 +91,25 @@ __decorate([
     (0, swagger_1.ApiProperty)(),
     __metadata("design:type", Date)
 ], ApprovalRequestDto.prototype, "updatedAt", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'UPI ID of the business owner',
+        required: false
+    }),
+    __metadata("design:type", String)
+], ApprovalRequestDto.prototype, "upiId", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Credit limit assigned to the vendor',
+        required: false
+    }),
+    __metadata("design:type", Number)
+], ApprovalRequestDto.prototype, "creditLimit", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Vendor status',
+        required: false
+    }),
+    __metadata("design:type", String)
+], ApprovalRequestDto.prototype, "vendorStatus", void 0);
 //# sourceMappingURL=approval-request.dto.js.map
