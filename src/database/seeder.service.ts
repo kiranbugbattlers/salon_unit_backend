@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import * as entities from './entities';
 import * as fs from 'fs';
 import * as path from 'path';
+import { BookingStatus } from '../common/enums';
 
 @Injectable()
 export class SeederService {
@@ -436,5 +437,189 @@ export class SeederService {
       console.error('❌ CSV import failed:', error);
       throw error;
     }
+  }
+
+  async createPositiveSettlementTestData() {
+    const boUserPhone = '9990001111';
+    const customerUserPhone = '9990002222';
+
+    let boUser = await this.userRepository.findOne({ where: { phone: boUserPhone } });
+    if (!boUser) {
+      boUser = this.userRepository.create({
+        phone: boUserPhone,
+        email: 'bo.sample@example.com',
+        isPhoneVerified: true,
+      });
+      boUser = await this.userRepository.save(boUser);
+    }
+
+    let businessOwner = await this.businessOwnerRepository.findOne({
+      where: { userId: boUser.id },
+    });
+    if (!businessOwner) {
+      businessOwner = this.businessOwnerRepository.create({
+        userId: boUser.id,
+        businessName: 'Sample Salon',
+        shopId: 'sample-shop-001',
+        isApproved: true,
+        isActive: true,
+      });
+      businessOwner = await this.businessOwnerRepository.save(businessOwner);
+    } else {
+      if (!businessOwner.isApproved) {
+        businessOwner.isApproved = true;
+        await this.businessOwnerRepository.save(businessOwner);
+      }
+    }
+
+    let customerUser = await this.userRepository.findOne({ where: { phone: customerUserPhone } });
+    if (!customerUser) {
+      customerUser = this.userRepository.create({
+        phone: customerUserPhone,
+        email: 'customer.sample@example.com',
+        isPhoneVerified: true,
+      });
+      customerUser = await this.userRepository.save(customerUser);
+    }
+
+    let customer = await this.customerRepository.findOne({ where: { userId: customerUser.id } });
+    if (!customer) {
+      customer = this.customerRepository.create({
+        userId: customerUser.id,
+        firstName: 'Sample',
+        lastName: 'Customer',
+      });
+      customer = await this.customerRepository.save(customer);
+    }
+
+    let staff = await this.staffRepository.findOne({ where: { businessOwnerId: businessOwner.id } });
+    if (!staff) {
+      staff = this.staffRepository.create({
+        businessOwnerId: businessOwner.id,
+        firstName: 'Alex',
+        lastName: 'Doe',
+      });
+      staff = await this.staffRepository.save(staff);
+    }
+
+    let serviceCategory = await this.serviceCategoryRepository.findOne({
+      where: { name: 'Hair' },
+    });
+    if (!serviceCategory) {
+      serviceCategory = this.serviceCategoryRepository.create({
+        name: 'Hair',
+        description: 'Hair services',
+        isActive: true,
+      });
+      serviceCategory = await this.serviceCategoryRepository.save(serviceCategory);
+    }
+
+    let service = await this.serviceRepository.findOne({
+      where: { name: 'Haircut', categoryId: serviceCategory.id },
+    });
+    if (!service) {
+      service = this.serviceRepository.create({
+        categoryId: serviceCategory.id,
+        name: 'Haircut',
+        description: 'Basic haircut',
+        basePrice: 600,
+        defaultDuration: 30,
+        isActive: true,
+      });
+      service = await this.serviceRepository.save(service);
+    }
+
+    let businessService = await this.businessServiceRepository.findOne({
+      where: { businessOwnerId: businessOwner.id, serviceId: service.id },
+    });
+    if (!businessService) {
+      businessService = this.businessServiceRepository.create({
+        businessOwnerId: businessOwner.id,
+        serviceId: service.id,
+        customPrice: 600,
+        customDurationMinutes: 30,
+        isActive: true,
+      });
+      await this.businessServiceRepository.save(businessService);
+    }
+
+    let bankingInfo = await this.bankingInfoRepository.findOne({
+      where: { businessOwnerId: businessOwner.id },
+    });
+    if (!bankingInfo) {
+      bankingInfo = this.bankingInfoRepository.create({
+        businessOwnerId: businessOwner.id,
+        bankName: 'HDFC Bank',
+        branch: 'Sample Branch',
+        accountHolderName: 'Sample Owner',
+        accountNumber: '123456789012',
+        ifscCode: 'HDFC0001234',
+        isVerified: true,
+        verifiedAt: new Date(),
+      });
+      bankingInfo = await this.bankingInfoRepository.save(bankingInfo);
+    }
+
+    const now = new Date();
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1, 10, 0, 0);
+    const lastMonthMid = new Date(now.getFullYear(), now.getMonth() - 1, 15, 12, 0, 0);
+    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth() - 1, 25, 15, 30, 0);
+
+    const bookingsData = [
+      {
+        appointmentDate: lastMonthStart,
+        startTime: '10:00:00',
+        endTime: '10:30:00',
+        totalAmount: 600,
+      },
+      {
+        appointmentDate: lastMonthMid,
+        startTime: '12:00:00',
+        endTime: '12:45:00',
+        totalAmount: 800,
+      },
+      {
+        appointmentDate: lastMonthEnd,
+        startTime: '15:00:00',
+        endTime: '15:40:00',
+        totalAmount: 700,
+      },
+    ];
+
+    for (const b of bookingsData) {
+      const exists = await this.bookingRepository.findOne({
+        where: {
+          businessOwnerId: businessOwner.id,
+          appointmentDate: b.appointmentDate instanceof Date
+            ? b.appointmentDate.toISOString().split('T')[0] as any
+            : b.appointmentDate,
+          startTime: b.startTime,
+        } as any,
+      });
+      if (exists) continue;
+
+      const booking = this.bookingRepository.create({
+        customerId: customer.id,
+        businessOwnerId: businessOwner.id,
+        staffId: staff.id,
+        serviceId: service.id,
+        appointmentDate: new Date(b.appointmentDate),
+        startTime: b.startTime,
+        endTime: b.endTime,
+        totalAmount: b.totalAmount,
+        status: BookingStatus.COMPLETED,
+        otpCode: '123456',
+        paymentCompleted: true,
+        serviceStartedAt: new Date(b.appointmentDate),
+        serviceCompletedAt: new Date(b.appointmentDate),
+      });
+      await this.bookingRepository.save(booking);
+    }
+
+    return {
+      businessOwnerId: businessOwner.id,
+      customerId: customer.id,
+      info: 'Sample data created for positive settlement testing',
+    };
   }
 }

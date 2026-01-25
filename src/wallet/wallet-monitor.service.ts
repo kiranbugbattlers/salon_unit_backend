@@ -1,8 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
-import { Wallet, WalletUserType, BusinessOwner } from '../database/entities';
+import { Wallet, WalletUserType, BusinessOwner, Admin } from '../database/entities';
+import { NotificationService } from '../common/services/notification.service';
 
 @Injectable()
 export class WalletMonitorService {
@@ -13,6 +14,10 @@ export class WalletMonitorService {
     private readonly walletRepository: Repository<Wallet>,
     @InjectRepository(BusinessOwner)
     private readonly businessOwnerRepository: Repository<BusinessOwner>,
+    @InjectRepository(Admin)
+    private readonly adminRepository: Repository<Admin>,
+    @Inject('EmailNotificationService')
+    private readonly notificationService: NotificationService,
   ) {}
 
   /**
@@ -35,8 +40,15 @@ export class WalletMonitorService {
 
       this.logger.log(`Found ${negativeWallets.length} business owner wallets with negative balance`);
 
-      let markedCount = 0;
-      let alreadyMarkedCount = 0;
+      // Get admins for notification
+      const admins = await this.adminRepository.find({ where: { isActive: true } });
+      const adminEmails = admins.filter((admin) => admin.email).map((admin) => admin.email);
+
+      if (adminEmails.length === 0) {
+        this.logger.warn('No active admins with email found for notifications');
+      }
+
+      let notifiedCount = 0;
 
       for (const wallet of negativeWallets) {
         // Find the business owner
@@ -49,25 +61,46 @@ export class WalletMonitorService {
           continue;
         }
 
-        // If not already marked as defaulter, mark them
-        if (!businessOwner.isDefaulter) {
-          businessOwner.isDefaulter = true;
-          businessOwner.defaulterSince = new Date();
-          await this.businessOwnerRepository.save(businessOwner);
+        const creditLimit = Number(businessOwner.creditLimit || 0);
+        const balance = Number(wallet.balance);
 
-          this.logger.warn(
-            `⚠️ Marked business owner as DEFAULTER: ${businessOwner.businessName} (${businessOwner.shopId}) | ` +
-              `Wallet balance: ₹${wallet.balance}`,
+        // Check if balance exceeds credit limit (balance is negative, so we check if balance < -creditLimit)
+        // e.g. Balance -1000, Limit 500. -1000 < -500 is true.
+        if (balance < -creditLimit) {
+           this.logger.warn(
+            `⚠️ Business owner exceeded credit limit: ${businessOwner.businessName} (${businessOwner.shopId}) | ` +
+              `Balance: ₹${balance} | Limit: ₹${creditLimit}`,
           );
-          markedCount++;
-        } else {
-          alreadyMarkedCount++;
+
+          // Notify Admins
+          // We do NOT mark as defaulter automatically ("no change will occur")
+          // Just notify admin
+          
+          for (const email of adminEmails) {
+            await this.notificationService.sendEmailNotification({
+              to: email,
+              subject: `Credit Limit Exceeded: ${businessOwner.businessName}`,
+              body: `
+                Hello Admin,
+
+                The following business owner has exceeded their credit limit:
+
+                Business Name: ${businessOwner.businessName}
+                Shop ID: ${businessOwner.shopId}
+                Current Balance: ₹${balance}
+                Credit Limit: ₹${creditLimit}
+                
+                Please review their account.
+              `,
+            });
+          }
+          notifiedCount++;
         }
       }
 
       this.logger.log(
         `✅ Wallet balance check completed. ` +
-          `Newly marked as defaulters: ${markedCount}, Already marked: ${alreadyMarkedCount}`,
+          `Notified admins for ${notifiedCount} business owners exceeding limit.`,
       );
     } catch (error) {
       this.logger.error(`Failed to check wallet balances: ${error.message}`, error.stack);
@@ -75,15 +108,14 @@ export class WalletMonitorService {
   }
 
   /**
-   * Manual method to check and mark defaulters
+   * Manual method to check credit limit breaches
    * Can be called via admin API
    */
-  async checkAndMarkDefaulters(): Promise<{
-    newDefaulters: number;
-    alreadyDefaulters: number;
+  async checkCreditLimitBreaches(): Promise<{
+    notifiedCount: number;
     totalNegativeWallets: number;
   }> {
-    this.logger.log('🔍 Manual wallet balance check initiated...');
+    this.logger.log('🔍 Manual credit limit check initiated...');
 
     const negativeWallets = await this.walletRepository.find({
       where: {
@@ -93,8 +125,11 @@ export class WalletMonitorService {
       },
     });
 
-    let newDefaulters = 0;
-    let alreadyDefaulters = 0;
+    // Get admins for notification
+    const admins = await this.adminRepository.find({ where: { isActive: true } });
+    const adminEmails = admins.filter((admin) => admin.email).map((admin) => admin.email);
+
+    let notifiedCount = 0;
 
     for (const wallet of negativeWallets) {
       const businessOwner = await this.businessOwnerRepository.findOne({
@@ -105,19 +140,36 @@ export class WalletMonitorService {
         continue;
       }
 
-      if (!businessOwner.isDefaulter) {
-        businessOwner.isDefaulter = true;
-        businessOwner.defaulterSince = new Date();
-        await this.businessOwnerRepository.save(businessOwner);
-        newDefaulters++;
-      } else {
-        alreadyDefaulters++;
+      const creditLimit = Number(businessOwner.creditLimit || 0);
+      const balance = Number(wallet.balance);
+
+      // Check if balance exceeds credit limit
+      if (balance < -creditLimit) {
+        // Notify Admins
+        for (const email of adminEmails) {
+          await this.notificationService.sendEmailNotification({
+            to: email,
+            subject: `Credit Limit Exceeded (Manual Check): ${businessOwner.businessName}`,
+            body: `
+              Hello Admin,
+
+              The following business owner has exceeded their credit limit (detected via manual check):
+
+              Business Name: ${businessOwner.businessName}
+              Shop ID: ${businessOwner.shopId}
+              Current Balance: ₹${balance}
+              Credit Limit: ₹${creditLimit}
+              
+              Please review their account.
+            `,
+          });
+        }
+        notifiedCount++;
       }
     }
 
     return {
-      newDefaulters,
-      alreadyDefaulters,
+      notifiedCount,
       totalNegativeWallets: negativeWallets.length,
     };
   }

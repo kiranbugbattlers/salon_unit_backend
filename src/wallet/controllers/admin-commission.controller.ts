@@ -10,6 +10,7 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -281,6 +282,15 @@ export class AdminCommissionController {
     description: 'Settlements generated successfully',
   })
   async generateMonthlySettlements(@Param('month') month: string): Promise<any> {
+    // Validate month format
+    if (!/^\d{4}-\d{2}$/.test(month)) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(month)) {
+        month = month.substring(0, 7);
+      } else {
+        throw new BadRequestException('Invalid month format. Expected YYYY-MM');
+      }
+    }
+
     const settlements = await this.settlementService.generateAllMonthlySettlements(month);
 
     return {

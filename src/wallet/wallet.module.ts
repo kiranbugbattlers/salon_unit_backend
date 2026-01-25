@@ -17,6 +17,9 @@ import {
   BankingInfo,
   DailySettlement,
   BusinessAddress,
+  VendorDuePayment,
+  Admin,
+  User,
 } from '../database/entities';
 import { IdempotencyKey } from '../database/entities/idempotency-key.entity';
 import { CommissionPayment } from '../database/entities/commission-payment.entity';
@@ -32,6 +35,7 @@ import { EncryptionService } from './encryption.service';
 import { CommissionPaymentService } from './commission-payment.service';
 import { DailyPayoutService } from './daily-payout.service';
 import { DailySettlementService } from './daily-settlement.service';
+import { NotificationService as EmailNotificationService } from '../common/services/notification.service';
 import { AdminCommissionController } from './controllers/admin-commission.controller';
 import { BusinessOwnerWalletController } from './controllers/business-owner-wallet.controller';
 import { CustomerWalletController } from './controllers/customer-wallet.controller';
@@ -58,6 +62,9 @@ import { RazorpayWebhookController } from './controllers/razorpay-webhook.contro
       CommissionPayment,
       DailySettlement,
       BusinessAddress,
+      VendorDuePayment,
+      Admin,
+      User,
     ]),
     ConfigModule,
   ],
@@ -81,6 +88,10 @@ import { RazorpayWebhookController } from './controllers/razorpay-webhook.contro
     CommissionPaymentService,
     DailyPayoutService,
     DailySettlementService,
+    {
+      provide: 'EmailNotificationService',
+      useClass: EmailNotificationService,
+    },
   ],
   exports: [
     WalletService,

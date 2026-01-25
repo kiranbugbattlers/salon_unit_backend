@@ -90,7 +90,7 @@ export class BusinessOwner {
   defaulterSince?: Date;
 
   @ApiProperty({ description: 'Whether the business is active' })
-  @Column({ name: 'is_active', default: true })
+  @Column({ name: 'is_active', default: true, select: false })
   isActive: boolean;
 
   @ApiProperty({ description: 'UPI ID for payments', required: false })

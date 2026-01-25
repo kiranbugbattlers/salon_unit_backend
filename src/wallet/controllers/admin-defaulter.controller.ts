@@ -11,6 +11,7 @@ import {
   HttpStatus,
   NotFoundException,
   BadRequestException,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -147,6 +148,13 @@ export class AdminDefaulterController {
     };
   }
 
+  @Get('check')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Manually trigger credit limit check (GET alias)' })
+  async checkDefaultersGet(): Promise<any> {
+    return this.checkDefaulters();
+  }
+
   @Get(':id')
   @Roles(UserRole.ADMIN)
   @ApiOperation({
@@ -170,7 +178,7 @@ export class AdminDefaulterController {
     status: 404,
     description: 'Business owner not found or not a defaulter',
   })
-  async getDefaulterDetails(@Param('id') businessOwnerId: string): Promise<any> {
+  async getDefaulterDetails(@Param('id', ParseUUIDPipe) businessOwnerId: string): Promise<any> {
     const businessOwner = await this.businessOwnerRepository.findOne({
       where: { id: businessOwnerId, isDefaulter: true },
       relations: ['user'],
@@ -251,14 +259,15 @@ export class AdminDefaulterController {
   @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Manually trigger defaulter check',
+    summary: 'Manually trigger credit limit check',
     description: `
-      Manually run the defaulter detection process instead of waiting for the cron job.
+      Manually run the credit limit breach detection process instead of waiting for the cron job.
 
       This will:
       1. Find all business owner wallets with negative balance
-      2. Mark them as defaulters if not already marked
-      3. Return count of newly marked and existing defaulters
+      2. Check if they exceed their assigned credit limit
+      3. Notify admins if limit is exceeded
+      4. Return count of notified admins
 
       Use this after:
       - Commission deductions
@@ -268,16 +277,16 @@ export class AdminDefaulterController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Defaulter check completed successfully',
+    description: 'Credit limit check completed successfully',
     type: CheckDefaultersApiResponseDto,
   })
   async checkDefaulters(): Promise<any> {
-    const result = await this.walletMonitorService.checkAndMarkDefaulters();
+    const result = await this.walletMonitorService.checkCreditLimitBreaches();
 
     return {
       code: 200,
       success: true,
-      message: `Defaulter check completed. ${result.newDefaulters} newly marked, ${result.alreadyDefaulters} already marked.`,
+      message: `Credit limit check completed. ${result.notifiedCount} notifications sent.`,
       data: result,
     };
   }
@@ -312,7 +321,7 @@ export class AdminDefaulterController {
     description: 'Business owner not found',
   })
   async manuallyMarkDefaulter(
-    @Param('id') businessOwnerId: string,
+    @Param('id', ParseUUIDPipe) businessOwnerId: string,
     @Body() actionDto: ManualDefaulterActionDto,
     @Request() req: any,
   ): Promise<any> {
