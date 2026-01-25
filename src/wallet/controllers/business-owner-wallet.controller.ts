@@ -22,12 +22,15 @@ import {
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../../common/enums';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { WalletService } from '../wallet.service';
 import { CommissionService } from '../commission.service';
 import { SettlementService } from '../settlement.service';
 import { CommissionPaymentService } from '../commission-payment.service';
 import { DailySettlementService } from '../daily-settlement.service';
-import { WalletUserType } from '../../database/entities';
+import { WalletUserType, VendorDuePayment } from '../../database/entities';
+import { DuePaymentStatus } from '../../database/entities/vendor-due-payment.entity';
 import {
   WalletApiResponseDto,
   WalletStatsApiResponseDto,
@@ -54,6 +57,8 @@ export class BusinessOwnerWalletController {
     private readonly settlementService: SettlementService,
     private readonly commissionPaymentService: CommissionPaymentService,
     private readonly dailySettlementService: DailySettlementService,
+    @InjectRepository(VendorDuePayment)
+    private readonly vendorDuePaymentRepository: Repository<VendorDuePayment>,
   ) {}
 
 
@@ -167,6 +172,110 @@ export class BusinessOwnerWalletController {
       success: true,
       message: 'Daily settlement history retrieved',
       data: result,
+    };
+  }
+
+  @Get('due-payments')
+  @Roles(UserRole.BUSINESS_OWNER)
+  @ApiOperation({
+    summary: 'Get due payments',
+    description: 'View your commission due payments created by admin, with status and remaining amounts.',
+  })
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 20 })
+  @ApiQuery({ name: 'status', required: false, enum: ['pending', 'overdue', 'paid', 'partially_paid'] })
+  @ApiResponse({ status: 200, description: 'Due payments retrieved' })
+  async getDuePayments(
+    @Request() req: any,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('status') status?: string,
+  ): Promise<any> {
+    const businessOwnerId = req.user.businessOwnerId;
+    const pageNum = page ? parseInt(String(page)) : 1;
+    const pageSize = limit ? parseInt(String(limit)) : 20;
+    const skip = (pageNum - 1) * pageSize;
+
+    const where: any = { businessOwnerId };
+    if (status && Object.values(DuePaymentStatus).includes(status as DuePaymentStatus)) {
+      where.status = status as DuePaymentStatus;
+    }
+
+    const [duePayments, total] = await this.vendorDuePaymentRepository.findAndCount({
+      where,
+      order: { dueDate: 'DESC', createdAt: 'DESC' },
+      skip,
+      take: pageSize,
+    });
+
+    const sanitized = duePayments.map((p) => ({
+      id: p.id,
+      dueAmount: Number(p.dueAmount),
+      paidAmount: Number(p.paidAmount),
+      remainingAmount: Number(p.remainingAmount),
+      status: p.status,
+      dueDate: p.dueDate,
+      description: p.description,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+    }));
+
+    return {
+      code: 200,
+      success: true,
+      message: 'Due payments retrieved',
+      data: {
+        duePayments: sanitized,
+        pagination: { page: pageNum, limit: pageSize, total, totalPages: Math.ceil(total / pageSize) },
+      },
+    };
+  }
+
+  @Get('due-payments/:id')
+  @Roles(UserRole.BUSINESS_OWNER)
+  @ApiOperation({
+    summary: 'Get due payment details',
+    description: 'View details of a specific due payment. Only accessible for your own records.',
+  })
+  @ApiParam({ name: 'id', description: 'Due payment ID (UUID)' })
+  @ApiResponse({ status: 200, description: 'Due payment details retrieved' })
+  @ApiResponse({ status: 404, description: 'Due payment not found' })
+  async getDuePaymentDetails(
+    @Request() req: any,
+    @Param('id') id: string,
+  ): Promise<any> {
+    const businessOwnerId = req.user.businessOwnerId;
+
+    const payment = await this.vendorDuePaymentRepository.findOne({
+      where: { id },
+    });
+
+    if (!payment || payment.businessOwnerId !== businessOwnerId) {
+      return {
+        code: 404,
+        success: false,
+        message: 'Due payment not found',
+      };
+    }
+
+    const data = {
+      id: payment.id,
+      businessOwnerId: payment.businessOwnerId,
+      dueAmount: Number(payment.dueAmount),
+      paidAmount: Number(payment.paidAmount),
+      remainingAmount: Number(payment.remainingAmount),
+      status: payment.status,
+      dueDate: payment.dueDate,
+      description: payment.description,
+      createdAt: payment.createdAt,
+      updatedAt: payment.updatedAt,
+    };
+
+    return {
+      code: 200,
+      success: true,
+      message: 'Due payment details retrieved',
+      data,
     };
   }
 

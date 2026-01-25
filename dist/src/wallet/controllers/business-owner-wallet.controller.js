@@ -18,21 +18,25 @@ const swagger_1 = require("@nestjs/swagger");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const roles_decorator_1 = require("../../common/decorators/roles.decorator");
 const enums_1 = require("../../common/enums");
+const typeorm_1 = require("@nestjs/typeorm");
+const typeorm_2 = require("typeorm");
 const wallet_service_1 = require("../wallet.service");
 const commission_service_1 = require("../commission.service");
 const settlement_service_1 = require("../settlement.service");
 const commission_payment_service_1 = require("../commission-payment.service");
 const daily_settlement_service_1 = require("../daily-settlement.service");
 const entities_1 = require("../../database/entities");
+const vendor_due_payment_entity_1 = require("../../database/entities/vendor-due-payment.entity");
 const wallet_dto_1 = require("../dto/wallet.dto");
 const commission_payment_dto_1 = require("../dto/commission-payment.dto");
 let BusinessOwnerWalletController = class BusinessOwnerWalletController {
-    constructor(walletService, commissionService, settlementService, commissionPaymentService, dailySettlementService) {
+    constructor(walletService, commissionService, settlementService, commissionPaymentService, dailySettlementService, vendorDuePaymentRepository) {
         this.walletService = walletService;
         this.commissionService = commissionService;
         this.settlementService = settlementService;
         this.commissionPaymentService = commissionPaymentService;
         this.dailySettlementService = dailySettlementService;
+        this.vendorDuePaymentRepository = vendorDuePaymentRepository;
     }
     async getWalletStats(req) {
         const userId = req.user.userId;
@@ -86,6 +90,73 @@ let BusinessOwnerWalletController = class BusinessOwnerWalletController {
             success: true,
             message: 'Daily settlement history retrieved',
             data: result,
+        };
+    }
+    async getDuePayments(req, page, limit, status) {
+        const businessOwnerId = req.user.businessOwnerId;
+        const pageNum = page ? parseInt(String(page)) : 1;
+        const pageSize = limit ? parseInt(String(limit)) : 20;
+        const skip = (pageNum - 1) * pageSize;
+        const where = { businessOwnerId };
+        if (status && Object.values(vendor_due_payment_entity_1.DuePaymentStatus).includes(status)) {
+            where.status = status;
+        }
+        const [duePayments, total] = await this.vendorDuePaymentRepository.findAndCount({
+            where,
+            order: { dueDate: 'DESC', createdAt: 'DESC' },
+            skip,
+            take: pageSize,
+        });
+        const sanitized = duePayments.map((p) => ({
+            id: p.id,
+            dueAmount: Number(p.dueAmount),
+            paidAmount: Number(p.paidAmount),
+            remainingAmount: Number(p.remainingAmount),
+            status: p.status,
+            dueDate: p.dueDate,
+            description: p.description,
+            createdAt: p.createdAt,
+            updatedAt: p.updatedAt,
+        }));
+        return {
+            code: 200,
+            success: true,
+            message: 'Due payments retrieved',
+            data: {
+                duePayments: sanitized,
+                pagination: { page: pageNum, limit: pageSize, total, totalPages: Math.ceil(total / pageSize) },
+            },
+        };
+    }
+    async getDuePaymentDetails(req, id) {
+        const businessOwnerId = req.user.businessOwnerId;
+        const payment = await this.vendorDuePaymentRepository.findOne({
+            where: { id },
+        });
+        if (!payment || payment.businessOwnerId !== businessOwnerId) {
+            return {
+                code: 404,
+                success: false,
+                message: 'Due payment not found',
+            };
+        }
+        const data = {
+            id: payment.id,
+            businessOwnerId: payment.businessOwnerId,
+            dueAmount: Number(payment.dueAmount),
+            paidAmount: Number(payment.paidAmount),
+            remainingAmount: Number(payment.remainingAmount),
+            status: payment.status,
+            dueDate: payment.dueDate,
+            description: payment.description,
+            createdAt: payment.createdAt,
+            updatedAt: payment.updatedAt,
+        };
+        return {
+            code: 200,
+            success: true,
+            message: 'Due payment details retrieved',
+            data,
         };
     }
     async getTransactions(req, page, limit, category, type) {
@@ -276,6 +347,41 @@ __decorate([
     __metadata("design:paramtypes", [Object, Number, Number, String, String]),
     __metadata("design:returntype", Promise)
 ], BusinessOwnerWalletController.prototype, "getDailyHistory", null);
+__decorate([
+    (0, common_1.Get)('due-payments'),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.BUSINESS_OWNER),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Get due payments',
+        description: 'View your commission due payments created by admin, with status and remaining amounts.',
+    }),
+    (0, swagger_1.ApiQuery)({ name: 'page', required: false, example: 1 }),
+    (0, swagger_1.ApiQuery)({ name: 'limit', required: false, example: 20 }),
+    (0, swagger_1.ApiQuery)({ name: 'status', required: false, enum: ['pending', 'overdue', 'paid', 'partially_paid'] }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Due payments retrieved' }),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Query)('page')),
+    __param(2, (0, common_1.Query)('limit')),
+    __param(3, (0, common_1.Query)('status')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Number, Number, String]),
+    __metadata("design:returntype", Promise)
+], BusinessOwnerWalletController.prototype, "getDuePayments", null);
+__decorate([
+    (0, common_1.Get)('due-payments/:id'),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.BUSINESS_OWNER),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Get due payment details',
+        description: 'View details of a specific due payment. Only accessible for your own records.',
+    }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Due payment ID (UUID)' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Due payment details retrieved' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Due payment not found' }),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
+], BusinessOwnerWalletController.prototype, "getDuePaymentDetails", null);
 __decorate([
     (0, common_1.Get)('transactions'),
     (0, roles_decorator_1.Roles)(enums_1.UserRole.BUSINESS_OWNER),
@@ -542,10 +648,12 @@ exports.BusinessOwnerWalletController = BusinessOwnerWalletController = __decora
     (0, common_1.Controller)('business-owner/wallet'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, swagger_1.ApiBearerAuth)('JWT'),
+    __param(5, (0, typeorm_1.InjectRepository)(entities_1.VendorDuePayment)),
     __metadata("design:paramtypes", [wallet_service_1.WalletService,
         commission_service_1.CommissionService,
         settlement_service_1.SettlementService,
         commission_payment_service_1.CommissionPaymentService,
-        daily_settlement_service_1.DailySettlementService])
+        daily_settlement_service_1.DailySettlementService,
+        typeorm_2.Repository])
 ], BusinessOwnerWalletController);
 //# sourceMappingURL=business-owner-wallet.controller.js.map

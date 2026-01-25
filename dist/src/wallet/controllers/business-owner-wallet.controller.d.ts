@@ -1,8 +1,10 @@
+import { Repository } from 'typeorm';
 import { WalletService } from '../wallet.service';
 import { CommissionService } from '../commission.service';
 import { SettlementService } from '../settlement.service';
 import { CommissionPaymentService } from '../commission-payment.service';
 import { DailySettlementService } from '../daily-settlement.service';
+import { VendorDuePayment } from '../../database/entities';
 import { CreateCommissionPaymentDto, VerifyCommissionPaymentDto } from '../dto/commission-payment.dto';
 export declare class BusinessOwnerWalletController {
     private readonly walletService;
@@ -10,10 +12,13 @@ export declare class BusinessOwnerWalletController {
     private readonly settlementService;
     private readonly commissionPaymentService;
     private readonly dailySettlementService;
-    constructor(walletService: WalletService, commissionService: CommissionService, settlementService: SettlementService, commissionPaymentService: CommissionPaymentService, dailySettlementService: DailySettlementService);
+    private readonly vendorDuePaymentRepository;
+    constructor(walletService: WalletService, commissionService: CommissionService, settlementService: SettlementService, commissionPaymentService: CommissionPaymentService, dailySettlementService: DailySettlementService, vendorDuePaymentRepository: Repository<VendorDuePayment>);
     getWalletStats(req: any): Promise<any>;
     getDailyStats(req: any, date?: string, startDate?: string, endDate?: string): Promise<any>;
     getDailyHistory(req: any, page?: number, limit?: number, startDate?: string, endDate?: string): Promise<any>;
+    getDuePayments(req: any, page?: number, limit?: number, status?: string): Promise<any>;
+    getDuePaymentDetails(req: any, id: string): Promise<any>;
     getTransactions(req: any, page?: number, limit?: number, category?: string, type?: string): Promise<any>;
     getSettlements(req: any, page?: number, limit?: number, status?: string): Promise<any>;
     getSettlementDetails(req: any, id: string): Promise<any>;
