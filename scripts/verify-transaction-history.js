@@ -43,7 +43,7 @@ async function verifyTransactionHistory() {
       console.log(`  Type: ${record.transaction_type.toUpperCase()} | Amount: ₹${record.transaction_amount}`);
       console.log(`  Balance: ₹${record.previous_balance} → ₹${record.remaining_balance}`);
       console.log(`  Method: ${record.payment_method} | Status: ${record.status}`);
-      console.log(`  Remarks: ${record.remarks}`);
+      console.log(`  remarks: ${record.remarks}`);
       console.log('  ---');
     });
 
@@ -140,7 +140,7 @@ async function verifyTransactionHistory() {
       console.log(`  Mobile: ${record.mobile_number} | Alt: ${record.alternate_number}`);
       console.log(`  Due: ₹${record.due_amount} | Paid: ₹${record.paid_amount} | Remaining: ₹${record.remaining_amount}`);
       console.log(`  Due Date: ${record.due_date} | Status: ${record.status}`);
-      console.log(`  Admin Remarks: ${record.admin_remarks}`);
+      console.log(`  Admin remarks: ${record.admin_remarks}`);
       console.log('  ---');
     });
 

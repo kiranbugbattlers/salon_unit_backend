@@ -199,7 +199,6 @@ let AdminDuePaymentsController = AdminDuePaymentsController_1 = class AdminDuePa
             remainingAmount: createDto.dueAmount,
             dueDate: new Date(createDto.dueDate),
             description: createDto.description,
-            adminRemarks: createDto.adminRemarks,
             salonName: businessOwner.businessName,
             ownerName: businessOwner?.firstName && businessOwner?.lastName
                 ? `${businessOwner.firstName} ${businessOwner.lastName}`.trim()
@@ -267,10 +266,6 @@ let AdminDuePaymentsController = AdminDuePaymentsController_1 = class AdminDuePa
                 duePayment.markedOverdueAt = new Date();
             }
             this.logger.log(`Updated status to: ${duePayment.status}`);
-        }
-        if (updateDto.adminRemarks !== undefined) {
-            duePayment.adminRemarks = updateDto.adminRemarks;
-            this.logger.log(`Updated admin remarks: ${duePayment.adminRemarks}`);
         }
         if (updateDto.isBusinessEnabled !== undefined) {
             duePayment.isBusinessEnabled = updateDto.isBusinessEnabled;
@@ -434,7 +429,6 @@ __decorate([
                 dueAmount: 1500.00,
                 dueDate: '2024-01-15',
                 description: 'Monthly commission payment for December 2023',
-                adminRemarks: 'Auto-generated from daily settlement',
             }
         }
     }),
@@ -455,7 +449,6 @@ __decorate([
             example: {
                 paidAmount: 750.00,
                 status: 'partially_paid',
-                adminRemarks: 'Partial payment received via bank transfer',
             }
         }
     }),

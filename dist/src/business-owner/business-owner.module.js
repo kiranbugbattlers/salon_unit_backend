@@ -29,6 +29,7 @@ const banking_info_entity_1 = require("../database/entities/banking-info.entity"
 const business_settings_entity_1 = require("../database/entities/business-settings.entity");
 const review_entity_1 = require("../database/entities/review.entity");
 const business_document_entity_1 = require("../database/entities/business-document.entity");
+const business_approval_entity_1 = require("../database/entities/business-approval.entity");
 let BusinessOwnerModule = class BusinessOwnerModule {
 };
 exports.BusinessOwnerModule = BusinessOwnerModule;
@@ -52,6 +53,7 @@ exports.BusinessOwnerModule = BusinessOwnerModule = __decorate([
                 business_settings_entity_1.BusinessSettings,
                 review_entity_1.Review,
                 business_document_entity_1.BusinessDocument,
+                business_approval_entity_1.BusinessApproval,
             ]),
             (0, common_1.forwardRef)(() => approval_module_1.ApprovalModule),
             common_module_1.CommonModule,

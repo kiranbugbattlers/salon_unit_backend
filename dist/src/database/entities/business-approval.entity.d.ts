@@ -10,6 +10,7 @@ export declare class BusinessApproval {
     status: ApprovalStatus;
     reviewNotes?: string;
     rejectionReason?: string;
+    remark?: string;
     isAutoAssigned: boolean;
     distanceToAgentKm?: number;
     reviewedAt?: Date;

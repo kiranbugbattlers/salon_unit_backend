@@ -30,6 +30,8 @@ export declare class BusinessOwner {
     isActive: boolean;
     upiId?: string;
     creditLimit?: number;
+    remark?: string;
+    alternateNumber?: string;
     vendorStatus: VendorStatus;
     createdAt: Date;
     updatedAt: Date;

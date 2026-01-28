@@ -81,10 +81,6 @@ export class VendorDuePayment {
   @Column({ name: 'created_by_admin_id', nullable: true })
   createdByAdminId?: string;
 
-  @ApiProperty({ description: 'Admin remarks about the due payment' })
-  @Column({ name: 'admin_remarks', type: 'text', nullable: true })
-  adminRemarks?: string;
-
   @ApiProperty({ description: 'Admin who last updated this due payment' })
   @Column({ name: 'updated_by_admin_id', nullable: true })
   updatedByAdminId?: string;

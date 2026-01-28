@@ -1,4 +1,7 @@
 import { DocumentType, DocumentStatus } from '../../common/enums/business-document.enum';
+export declare class UploadBusinessDocumentDto {
+    file: any;
+}
 export declare class BusinessDocumentResponseDto {
     id: string;
     businessOwnerId: string;

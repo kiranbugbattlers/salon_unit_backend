@@ -1,6 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { DocumentType, DocumentStatus } from '../../common/enums/business-document.enum';
 
+export class UploadBusinessDocumentDto {
+  @ApiProperty({
+    type: 'string',
+    format: 'binary',
+    description: 'Document file (jpg, png, webp, pdf)',
+  })
+  file: any;
+}
+
 export class BusinessDocumentResponseDto {
   @ApiProperty()
   id: string;

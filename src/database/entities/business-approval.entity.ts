@@ -72,6 +72,14 @@ export class BusinessApproval {
   // @Column({ name: 'vendor_status', length: 50, nullable: true })
   // vendorStatus?: string;
 
+  @ApiProperty({ 
+    description: 'remarks when credit limit is added or modified',
+    example: 'Initial credit limit set for new vendor',
+    required: false
+  })
+  @Column({ name: 'remark', type: 'text', nullable: true })
+  remark?: string;
+
   @ApiProperty()
   @Column({ name: 'is_auto_assigned', default: true })
   isAutoAssigned: boolean;

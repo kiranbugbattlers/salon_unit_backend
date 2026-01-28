@@ -19,13 +19,14 @@ const typeorm_2 = require("typeorm");
 const entities_1 = require("../database/entities");
 const dto_1 = require("./dto");
 const enums_1 = require("../common/enums");
+const enums_2 = require("../common/enums");
 const business_document_enum_1 = require("../common/enums/business-document.enum");
 const entities_2 = require("../database/entities");
 const shop_id_util_1 = require("../common/utils/shop-id.util");
 const approval_service_1 = require("../approval/approval.service");
 const s3_service_1 = require("../common/services/s3.service");
 let BusinessOwnerService = class BusinessOwnerService {
-    constructor(businessOwnerRepository, onboardingRepository, addressRepository, mediaRepository, businessOperatingHoursRepository, businessServiceRepository, servicePackageRepository, servicePackageItemRepository, serviceRepository, serviceCategoryRepository, userRepository, customerRepository, bankingInfoRepository, businessSettingsRepository, reviewRepository, businessDocumentRepository, approvalService, s3Service) {
+    constructor(businessOwnerRepository, onboardingRepository, addressRepository, mediaRepository, businessOperatingHoursRepository, businessServiceRepository, servicePackageRepository, servicePackageItemRepository, serviceRepository, serviceCategoryRepository, userRepository, customerRepository, bankingInfoRepository, businessSettingsRepository, reviewRepository, businessDocumentRepository, businessApprovalRepository, approvalService, s3Service) {
         this.businessOwnerRepository = businessOwnerRepository;
         this.onboardingRepository = onboardingRepository;
         this.addressRepository = addressRepository;
@@ -42,6 +43,7 @@ let BusinessOwnerService = class BusinessOwnerService {
         this.businessSettingsRepository = businessSettingsRepository;
         this.reviewRepository = reviewRepository;
         this.businessDocumentRepository = businessDocumentRepository;
+        this.businessApprovalRepository = businessApprovalRepository;
         this.approvalService = approvalService;
         this.s3Service = s3Service;
     }
@@ -1254,7 +1256,120 @@ let BusinessOwnerService = class BusinessOwnerService {
             allRequiredUploaded: hasAadhar && hasPan,
         };
     }
+    async uploadBusinessDocumentForApproval(userId, file) {
+        console.log('Service received file:', file);
+        console.log('File details:', {
+            originalname: file?.originalname,
+            mimetype: file?.mimetype,
+            size: file?.size,
+            buffer: file?.buffer ? 'Buffer present' : 'No buffer'
+        });
+        const businessOwner = await this.businessOwnerRepository.findOne({
+            where: { userId },
+        });
+        if (!businessOwner) {
+            throw new common_1.NotFoundException('Business owner not found');
+        }
+        const uploadOptions = {
+            folder: 'documents',
+            prefix: `business_owner_${businessOwner.id}`,
+            customFileName: `document_${Date.now()}`,
+            publicRead: true,
+        };
+        const result = await this.s3Service.uploadFile(file, uploadOptions);
+        let documentType = business_document_enum_1.DocumentType.OTHER;
+        const fileName = file.originalname.toLowerCase();
+        if (fileName.includes('aadhar') || fileName.includes('aadhaar')) {
+            documentType = business_document_enum_1.DocumentType.AADHAR;
+        }
+        else if (fileName.includes('pan')) {
+            documentType = business_document_enum_1.DocumentType.PAN;
+        }
+        else if (fileName.includes('gst')) {
+            documentType = business_document_enum_1.DocumentType.GST_CERTIFICATE;
+        }
+        else if (fileName.includes('shop') || fileName.includes('trade')) {
+            documentType = business_document_enum_1.DocumentType.TRADE_LICENSE;
+        }
+        else if (fileName.includes('fssai')) {
+            documentType = business_document_enum_1.DocumentType.FSSAI_LICENSE;
+        }
+        else if (fileName.includes('msme') || fileName.includes('udyam')) {
+            documentType = business_document_enum_1.DocumentType.MSME_REGISTRATION;
+        }
+        else if (fileName.includes('bank') || fileName.includes('statement')) {
+            documentType = business_document_enum_1.DocumentType.BANK_STATEMENT;
+        }
+        else if (fileName.includes('cheque')) {
+            documentType = business_document_enum_1.DocumentType.CANCELLED_CHEQUE;
+        }
+        else if (fileName.includes('electricity') || fileName.includes('bill')) {
+            documentType = business_document_enum_1.DocumentType.ELECTRICITY_BILL;
+        }
+        else if (fileName.includes('rent') || fileName.includes('agreement')) {
+            documentType = business_document_enum_1.DocumentType.RENT_AGREEMENT;
+        }
+        else if (fileName.includes('photo') || fileName.includes('shop')) {
+            documentType = business_document_enum_1.DocumentType.SHOP_PHOTO;
+        }
+        else if (fileName.includes('signature')) {
+            documentType = business_document_enum_1.DocumentType.SIGNATURE;
+        }
+        else if (fileName.includes('id') || fileName.includes('proof')) {
+            documentType = business_document_enum_1.DocumentType.ID_PROOF;
+        }
+        else if (fileName.includes('address')) {
+            documentType = business_document_enum_1.DocumentType.ADDRESS_PROOF;
+        }
+        let document = await this.businessDocumentRepository.findOne({
+            where: { businessOwnerId: businessOwner.id, documentType },
+        });
+        if (document) {
+            document.documentUrl = result.url;
+            document.status = business_document_enum_1.DocumentStatus.PENDING;
+            document.rejectionReason = null;
+            document.uploadedAt = new Date();
+        }
+        else {
+            document = this.businessDocumentRepository.create({
+                businessOwnerId: businessOwner.id,
+                documentType,
+                documentUrl: result.url,
+                status: business_document_enum_1.DocumentStatus.PENDING,
+            });
+        }
+        const savedDoc = await this.businessDocumentRepository.save(document);
+        let approval = await this.businessApprovalRepository.findOne({
+            where: { businessOwnerId: businessOwner.id },
+        });
+        if (!approval) {
+            approval = this.businessApprovalRepository.create({
+                businessOwnerId: businessOwner.id,
+                assignedAgentId: 'default-agent',
+                status: enums_2.ApprovalStatus.PENDING,
+                isAutoAssigned: true,
+            });
+            await this.businessApprovalRepository.save(approval);
+        }
+        return {
+            id: savedDoc.id,
+            businessOwnerId: savedDoc.businessOwnerId,
+            documentType: savedDoc.documentType,
+            documentUrl: savedDoc.documentUrl,
+            status: savedDoc.status,
+            rejectionReason: savedDoc.rejectionReason,
+            uploadedAt: savedDoc.uploadedAt,
+            verifiedAt: savedDoc.verifiedAt,
+        };
+    }
     async uploadBusinessDocument(userId, documentType, file) {
+        console.log('Service received file:', file);
+        console.log('File details:', {
+            originalname: file?.originalname,
+            mimetype: file?.mimetype,
+            size: file?.size,
+            buffer: file?.buffer ? 'Buffer present' : 'No buffer'
+        });
         const businessOwner = await this.businessOwnerRepository.findOne({
             where: { userId },
         });
@@ -1358,7 +1473,9 @@ exports.BusinessOwnerService = BusinessOwnerService = __decorate([
     __param(13, (0, typeorm_1.InjectRepository)(entities_1.BusinessSettings)),
     __param(14, (0, typeorm_1.InjectRepository)(entities_1.Review)),
     __param(15, (0, typeorm_1.InjectRepository)(entities_1.BusinessDocument)),
+    __param(16, (0, typeorm_1.InjectRepository)(entities_1.BusinessApproval)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

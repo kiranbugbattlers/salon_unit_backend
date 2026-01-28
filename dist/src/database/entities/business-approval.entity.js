@@ -78,6 +78,15 @@ __decorate([
         example: 'active',
         required: false
     }),
+    (0, swagger_1.ApiProperty)({
+        description: 'remarks when credit limit is added or modified',
+        example: 'Initial credit limit set for new vendor',
+        required: false
+    }),
+    (0, typeorm_1.Column)({ name: 'remark', type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], BusinessApproval.prototype, "remark", void 0);
+__decorate([
     (0, swagger_1.ApiProperty)(),
     (0, typeorm_1.Column)({ name: 'is_auto_assigned', default: true }),
     __metadata("design:type", Boolean)

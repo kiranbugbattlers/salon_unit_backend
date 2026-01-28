@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
+import { Express } from 'express';
 import {
   BusinessOwner,
   BusinessOwnerOnboarding,
@@ -23,6 +24,7 @@ import {
   BusinessSettings,
   Review,
   BusinessDocument,
+  BusinessApproval,
 } from '../database/entities';
 import {
   BusinessOwnerOnboardingStep1Dto,
@@ -66,6 +68,7 @@ import {
   BusinessDocumentListResponseDto,
 } from './dto';
 import { MediaType, AddressType } from '../common/enums';
+import { ApprovalStatus } from '../common/enums';
 import { DocumentType, DocumentStatus } from '../common/enums/business-document.enum';
 import { ServiceCategory } from '../database/entities';
 import { generateShopId } from '../common/utils/shop-id.util';
@@ -107,6 +110,8 @@ export class BusinessOwnerService {
     private reviewRepository: Repository<Review>,
     @InjectRepository(BusinessDocument)
     private businessDocumentRepository: Repository<BusinessDocument>,
+    @InjectRepository(BusinessApproval)
+    private businessApprovalRepository: Repository<BusinessApproval>,
     private approvalService: ApprovalService,
     private readonly s3Service: S3Service,
   ) {}
@@ -1910,13 +1915,137 @@ export class BusinessOwnerService {
   }
 
   /**
+   * Upload a business document for approval
+   */
+  async uploadBusinessDocumentForApproval(
+    userId: string,
+    file: Express.Multer.File,
+  ): Promise<BusinessDocumentResponseDto> {
+    console.log('Service received file:', file);
+    console.log('File details:', {
+      originalname: file?.originalname,
+      mimetype: file?.mimetype,
+      size: file?.size,
+      buffer: file?.buffer ? 'Buffer present' : 'No buffer'
+    });
+    
+    const businessOwner = await this.businessOwnerRepository.findOne({
+      where: { userId },
+    });
+
+    if (!businessOwner) {
+      throw new NotFoundException('Business owner not found');
+    }
+
+    // Upload to S3
+    const uploadOptions = {
+      folder: 'documents',
+      prefix: `business_owner_${businessOwner.id}`,
+      customFileName: `document_${Date.now()}`,
+      publicRead: true,
+    };
+
+    const result: UploadResult = await this.s3Service.uploadFile(file, uploadOptions);
+
+    // Determine document type based on file content or name
+    let documentType = DocumentType.OTHER;
+    const fileName = file.originalname.toLowerCase();
+    
+    if (fileName.includes('aadhar') || fileName.includes('aadhaar')) {
+      documentType = DocumentType.AADHAR;
+    } else if (fileName.includes('pan')) {
+      documentType = DocumentType.PAN;
+    } else if (fileName.includes('gst')) {
+      documentType = DocumentType.GST_CERTIFICATE;
+    } else if (fileName.includes('shop') || fileName.includes('trade')) {
+      documentType = DocumentType.TRADE_LICENSE;
+    } else if (fileName.includes('fssai')) {
+      documentType = DocumentType.FSSAI_LICENSE;
+    } else if (fileName.includes('msme') || fileName.includes('udyam')) {
+      documentType = DocumentType.MSME_REGISTRATION;
+    } else if (fileName.includes('bank') || fileName.includes('statement')) {
+      documentType = DocumentType.BANK_STATEMENT;
+    } else if (fileName.includes('cheque')) {
+      documentType = DocumentType.CANCELLED_CHEQUE;
+    } else if (fileName.includes('electricity') || fileName.includes('bill')) {
+      documentType = DocumentType.ELECTRICITY_BILL;
+    } else if (fileName.includes('rent') || fileName.includes('agreement')) {
+      documentType = DocumentType.RENT_AGREEMENT;
+    } else if (fileName.includes('photo') || fileName.includes('shop')) {
+      documentType = DocumentType.SHOP_PHOTO;
+    } else if (fileName.includes('signature')) {
+      documentType = DocumentType.SIGNATURE;
+    } else if (fileName.includes('id') || fileName.includes('proof')) {
+      documentType = DocumentType.ID_PROOF;
+    } else if (fileName.includes('address')) {
+      documentType = DocumentType.ADDRESS_PROOF;
+    }
+
+    // Check if document of this type already exists
+    let document = await this.businessDocumentRepository.findOne({
+      where: { businessOwnerId: businessOwner.id, documentType },
+    });
+
+    if (document) {
+      document.documentUrl = result.url;
+      document.status = DocumentStatus.PENDING;
+      document.rejectionReason = null;
+      document.uploadedAt = new Date();
+    } else {
+      document = this.businessDocumentRepository.create({
+        businessOwnerId: businessOwner.id,
+        documentType,
+        documentUrl: result.url,
+        status: DocumentStatus.PENDING,
+      });
+    }
+
+    const savedDoc = await this.businessDocumentRepository.save(document);
+
+    // Check if business approval exists, create if not
+    let approval = await this.businessApprovalRepository.findOne({
+      where: { businessOwnerId: businessOwner.id },
+    });
+
+    if (!approval) {
+      // Create business approval record
+      approval = this.businessApprovalRepository.create({
+        businessOwnerId: businessOwner.id,
+        assignedAgentId: 'default-agent', // You might want to implement agent assignment logic
+        status: ApprovalStatus.PENDING,
+        isAutoAssigned: true,
+      });
+      await this.businessApprovalRepository.save(approval);
+    }
+
+    return {
+      id: savedDoc.id,
+      businessOwnerId: savedDoc.businessOwnerId,
+      documentType: savedDoc.documentType,
+      documentUrl: savedDoc.documentUrl,
+      status: savedDoc.status,
+      rejectionReason: savedDoc.rejectionReason,
+      uploadedAt: savedDoc.uploadedAt,
+      verifiedAt: savedDoc.verifiedAt,
+    };
+  }
+
+  /**
    * Upload a business document
    */
   async uploadBusinessDocument(
     userId: string,
     documentType: DocumentType,
-    file: any,
+    file: Express.Multer.File,
   ): Promise<BusinessDocumentResponseDto> {
+    console.log('Service received file:', file);
+    console.log('File details:', {
+      originalname: file?.originalname,
+      mimetype: file?.mimetype,
+      size: file?.size,
+      buffer: file?.buffer ? 'Buffer present' : 'No buffer'
+    });
+    
     const businessOwner = await this.businessOwnerRepository.findOne({
       where: { userId },
     });

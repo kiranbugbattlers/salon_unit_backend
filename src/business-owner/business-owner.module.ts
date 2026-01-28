@@ -22,6 +22,7 @@ import { BankingInfo } from '../database/entities/banking-info.entity';
 import { BusinessSettings } from '../database/entities/business-settings.entity';
 import { Review } from '../database/entities/review.entity';
 import { BusinessDocument } from '../database/entities/business-document.entity';
+import { BusinessApproval } from '../database/entities/business-approval.entity';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { BusinessDocument } from '../database/entities/business-document.entity'
       BusinessSettings,
       Review,
       BusinessDocument,
+      BusinessApproval,
     ]),
     forwardRef(() => ApprovalModule),
     CommonModule,

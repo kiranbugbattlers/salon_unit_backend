@@ -34,7 +34,7 @@ export declare class AdminTransactionHistoryItemDto {
     commissionRelatedBookingId?: string;
     commissionStatus?: TransactionStatus;
     commissionSettlementDate?: Date;
-    commissionRemarks?: string;
+    commissionremarks?: string;
 }
 export declare class DayWiseAdminTransactionHistoryDto {
     date: Date;

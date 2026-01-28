@@ -1,7 +1,6 @@
 import { BusinessOwnerService } from './business-owner.service';
 import { BusinessOwnerOnboardingStep1Dto, BusinessOwnerOnboardingStep2Dto, BusinessOwnerOnboardingStep3Dto, BusinessOwnerOnboardingStep4Dto, BusinessOwnerOnboardingStepResponseDto, BusinessOwnerOnboardingCompletionResponseDto, BusinessOwnerOnboardingStatusResponseDto, BusinessOwnerProfileResponseDto, BusinessOwnerProfileUpdateDto, BusinessInfoResponseDto, UpdateBusinessInfoDto, BusinessServicesResponseDto, UpdateBusinessServicesDto, BusinessMediaUploadResponseDto, BusinessMediaListResponseDto, BusinessMediaDeleteResponseDto, BusinessOwnerServicesGroupedByCategoryResponseDto, CreateServicePackageDto, UpdateServicePackageDto, ServicePackageResponseWrapperDto, ServicePackageDeleteResponseDto, DeleteBusinessServicesDto, DeleteBusinessServicesResponseDto, UpdateDeliverySettingsDto, BusinessDocumentResponseDto, BusinessDocumentListResponseDto } from './dto';
 import { BusinessSettings } from '../database/entities';
-import { DocumentType } from '../common/enums/business-document.enum';
 export declare class BusinessOwnerController {
     private businessOwnerService;
     constructor(businessOwnerService: BusinessOwnerService);
@@ -38,5 +37,5 @@ export declare class BusinessOwnerController {
     getDeliverySettings(req: any): Promise<BusinessSettings>;
     updateDeliverySettings(req: any, updateDto: UpdateDeliverySettingsDto): Promise<BusinessSettings>;
     getBusinessDocuments(req: any): Promise<BusinessDocumentListResponseDto>;
-    uploadBusinessDocument(file: any, documentType: DocumentType, req: any): Promise<BusinessDocumentResponseDto>;
+    uploadBusinessDocument(file: Express.Multer.File, req: any): Promise<BusinessDocumentResponseDto>;
 }

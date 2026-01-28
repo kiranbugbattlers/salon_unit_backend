@@ -7,6 +7,6 @@ export declare class VendorStatusController {
     getBusinessOwnersByVendorStatus(status?: VendorStatus, page?: number, limit?: number): Promise<any>;
     manuallyUpdateVendorStatus(businessOwnerId: string, updateDto: {
         status: VendorStatus;
-        adminRemarks?: string;
+        remarks?: string;
     }): Promise<any>;
 }

@@ -11,7 +11,7 @@ console.log('');
 console.log('📋 VALIDATION RULES:');
 console.log('✅ paidAmount: must be number >= 0 and <= dueAmount');
 console.log('✅ status: must be one of [pending, overdue, paid, partially_paid]');
-console.log('✅ adminRemarks: optional string');
+console.log('✅ remarks: optional string');
 console.log('✅ isBusinessEnabled: optional boolean');
 console.log('');
 
@@ -24,7 +24,7 @@ console.log('Body:');
 console.log(JSON.stringify({
     "paidAmount": 1500.00,
     "status": "paid",
-    "adminRemarks": "Full payment received via bank transfer - Transaction ID: TXN789012"
+    "remarks": "Full payment received via bank transfer - Transaction ID: TXN789012"
 }, null, 2));
 console.log('');
 
@@ -34,7 +34,7 @@ console.log('Body:');
 console.log(JSON.stringify({
     "paidAmount": 750.00,
     "status": "partially_paid",
-    "adminRemarks": "Partial payment received via bank transfer - Transaction ID: TXN123456"
+    "remarks": "Partial payment received via bank transfer - Transaction ID: TXN123456"
 }, null, 2));
 console.log('');
 
@@ -56,7 +56,7 @@ console.log(JSON.stringify({
         "paidAmount": 1500.00,
         "remainingAmount": 0.00,
         "status": "paid",
-        "adminRemarks": "Full payment received...",
+        "remarks": "Full payment received...",
         "businessName": "Royal Elite Salon",
         "ownerName": "Ashwin Suryawanshi"
     }

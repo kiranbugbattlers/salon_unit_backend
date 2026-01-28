@@ -33,6 +33,7 @@ exports.AdminModule = AdminModule = __decorate([
                 entities_1.VendorDuePayment,
                 entities_1.Wallet,
                 entities_1.WalletTransaction,
+                entities_1.BusinessApproval,
             ]),
             wallet_module_1.WalletModule,
         ],

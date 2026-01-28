@@ -10,6 +10,7 @@ import {
   User,
   PaymentMethodType,
   CommissionConfig,
+  Staff,
 } from '../database/entities';
 import { BookingStatus } from '../common/enums';
 
@@ -321,6 +322,8 @@ export class DailySettlementService {
       .createQueryBuilder('b')
       .select('COUNT(*)', 'count')
       .addSelect('COALESCE(SUM(b.totalAmount), 0)', 'total')
+      .addSelect(`COALESCE(SUM(CASE WHEN b.paymentMethod = '${PaymentMethodType.COD}' THEN b.totalAmount ELSE 0 END), 0)`, 'codTotal')
+      .addSelect(`COALESCE(SUM(CASE WHEN b.paymentMethod = '${PaymentMethodType.ONLINE}' THEN b.totalAmount ELSE 0 END), 0)`, 'onlineTotal')
       .where('b.status = :status', { status: BookingStatus.COMPLETED })
       .andWhere('b.serviceCompletedAt IS NOT NULL');
 
@@ -346,10 +349,12 @@ export class DailySettlementService {
 
     const summaryResult = await summaryQuery.getRawOne();
     const totalTransactionsAmount = parseFloat(summaryResult.total) || 0;
+    const totalCodAmount = parseFloat(summaryResult.codTotal) || 0;
+    const totalOnlineAmount = parseFloat(summaryResult.onlineTotal) || 0;
     const commissionAmount = (totalTransactionsAmount * commissionPercent) / 100;
     const gstAmount = (commissionAmount * gstPercent) / 100;
     const totalDeduction = commissionAmount + gstAmount;
-    const settlementAmount = totalTransactionsAmount - totalDeduction;
+    const settlementAmount = totalOnlineAmount - totalDeduction;
 
     // Build history records
     const history = bookings.map(booking => {
@@ -357,28 +362,31 @@ export class DailySettlementService {
       const commission = (amount * commissionPercent) / 100;
       const gst = (commission * gstPercent) / 100;
       const deduction = commission + gst;
-      const settlement = amount - deduction;
+      const settlement = booking.paymentMethod === PaymentMethodType.ONLINE ? amount - deduction : 0;
 
       const bo = booking.businessOwner;
       const primaryAddress = bo?.addresses?.find(a => a.isPrimary) || bo?.addresses?.[0];
 
       return {
-        bookingId: booking.id,
         date: booking.serviceCompletedAt?.toISOString().split('T')[0] || 'N/A',
         completedAt: booking.serviceCompletedAt,
+        appointmentDate: booking.appointmentDate,
+        startTime: booking.startTime,
+        endTime: booking.endTime,
+        serviceLocation: booking.serviceLocation,
         businessOwnerId: bo?.id || 'N/A',
         ownerName: bo ? [bo.firstName, bo.lastName].filter(Boolean).join(' ') || 'N/A' : 'N/A',
         salonName: bo?.businessName || 'N/A',
         email: bo?.user?.email || 'N/A',
         mobileNumber: bo?.user?.phone || 'N/A',
         address: primaryAddress
-          ? [primaryAddress.streetAddress, primaryAddress.city, primaryAddress.state].filter(Boolean).join(', ')
+          ? [primaryAddress.streetAddress, primaryAddress.city, primaryAddress.state, primaryAddress.postalCode].filter(Boolean).join(', ')
           : 'N/A',
         customerName: booking.customer 
           ? [booking.customer.firstName, booking.customer.lastName].filter(Boolean).join(' ') || 'N/A'
           : 'N/A',
         amount: Math.round(amount * 100) / 100,
-        paymentMethod: booking.paymentMethod || 'N/A',
+        paymentMethod: booking.paymentMethod?.toLowerCase() || 'N/A',
         commissionAmount: Math.round(commission * 100) / 100,
         gstAmount: Math.round(gst * 100) / 100,
         totalDeduction: Math.round(deduction * 100) / 100,
@@ -398,6 +406,10 @@ export class DailySettlementService {
         totalDeduction: Math.round(totalDeduction * 100) / 100,
         totalSettlementAmount: Math.round(settlementAmount * 100) / 100,
         totalBookings: parseInt(summaryResult.count) || 0,
+        commissionPercent: commissionPercent,
+        gstPercent: gstPercent,
+        totalCodAmount: Math.round(totalCodAmount * 100) / 100,
+        totalOnlineAmount: Math.round(totalOnlineAmount * 100) / 100,
       },
     };
   }

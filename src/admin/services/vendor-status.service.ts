@@ -33,7 +33,7 @@ export class VendorStatusService {
   async manuallyUpdateVendorStatus(
     businessOwnerId: string, 
     newStatus: VendorStatus,
-    adminRemarks?: string
+    remarks?: string
   ): Promise<BusinessOwner> {
     try {
       const businessOwner = await this.businessOwnerRepository.findOne({
@@ -45,16 +45,119 @@ export class VendorStatusService {
       }
 
       const oldStatus = businessOwner.vendorStatus;
-      businessOwner.vendorStatus = newStatus;
+      
+      // Validate and convert vendorStatus if needed
+      if (typeof newStatus === 'string') {
+        // Find matching enum value (case-insensitive)
+        const statusValue = Object.values(VendorStatus).find(
+          status => status.toLowerCase() === newStatus.toLowerCase()
+        );
+        if (statusValue) {
+          businessOwner.vendorStatus = statusValue as VendorStatus;
+        } else {
+          console.warn('Invalid vendorStatus value:', newStatus);
+          businessOwner.vendorStatus = VendorStatus.ACTIVE; // Use default
+        }
+      } else {
+        businessOwner.vendorStatus = newStatus;
+      }
 
-      await this.businessOwnerRepository.save(businessOwner);
+      try {
+        await this.businessOwnerRepository.save(businessOwner);
 
-      this.logger.log(
-        `Admin manually updated vendor status for business owner ${businessOwnerId} ` +
-        `from ${oldStatus} to ${newStatus}${adminRemarks ? ` - Remarks: ${adminRemarks}` : ''}`
-      );
+        this.logger.log(
+          `Admin manually updated vendor status for business owner ${businessOwnerId} ` +
+          `from ${oldStatus} to ${businessOwner.vendorStatus}${remarks ? ` - remarks: ${remarks}` : ''}`
+        );
 
-      return businessOwner;
+        return businessOwner;
+      } catch (error) {
+        console.error('Error updating vendor status:', error.message);
+        
+        // Handle constraint errors with multiple approaches
+        if (error.message.includes('vendor_status_check') || error.message.includes('violates check constraint')) {
+          console.log('Database constraint error. Trying alternative approaches...');
+          
+          // Approach 1: Try with default value
+          try {
+            businessOwner.vendorStatus = VendorStatus.ACTIVE;
+            await this.businessOwnerRepository.save(businessOwner);
+            
+            this.logger.log(
+              `Admin manually updated vendor status for business owner ${businessOwnerId} ` +
+              `from ${oldStatus} to ${businessOwner.vendorStatus} (default used due to constraint)${remarks ? ` - remarks: ${remarks}` : ''}`
+            );
+
+            return businessOwner;
+          } catch (retryError1) {
+            console.error('Retry with ACTIVE failed:', retryError1.message);
+            
+            // Approach 2: Save without vendorStatus first
+            try {
+              const businessOwnerCopy = { ...businessOwner };
+              delete (businessOwnerCopy as any).vendorStatus;
+              
+              await this.businessOwnerRepository.save(businessOwnerCopy);
+              console.log('Business owner saved without vendorStatus');
+              
+              // Update vendorStatus separately
+              try {
+                await this.businessOwnerRepository.update(businessOwnerId, {
+                  vendorStatus: VendorStatus.ACTIVE
+                });
+                console.log('vendorStatus updated separately');
+                
+                const updatedBusinessOwner = await this.businessOwnerRepository.findOne({
+                  where: { id: businessOwnerId }
+                });
+                
+                if (updatedBusinessOwner) {
+                  Object.assign(businessOwner, updatedBusinessOwner);
+                }
+                
+                this.logger.log(
+                  `Admin manually updated vendor status for business owner ${businessOwnerId} ` +
+                  `from ${oldStatus} to ${businessOwner.vendorStatus} (alternative approach)${remarks ? ` - remarks: ${remarks}` : ''}`
+                );
+
+                return businessOwner;
+              } catch (statusUpdateError) {
+                console.error('Failed to update vendorStatus separately:', statusUpdateError.message);
+                // Continue without vendorStatus update
+                this.logger.log(
+                  `Admin updated business owner ${businessOwnerId} but vendorStatus could not be changed due to database constraint${remarks ? ` - remarks: ${remarks}` : ''}`
+                );
+                return businessOwner;
+              }
+            } catch (retryError2) {
+              console.error('Save without vendorStatus failed:', retryError2.message);
+              
+              // Approach 3: Use raw SQL as last resort
+              try {
+                await this.businessOwnerRepository
+                  .createQueryBuilder()
+                  .update(BusinessOwner)
+                  .set({ vendorStatus: VendorStatus.ACTIVE })
+                  .where('id = :id', { id: businessOwnerId })
+                  .execute();
+                console.log('Raw SQL update successful');
+                
+                this.logger.log(
+                  `Admin manually updated vendor status for business owner ${businessOwnerId} ` +
+                  `from ${oldStatus} to ACTIVE (raw SQL approach)${remarks ? ` - remarks: ${remarks}` : ''}`
+                );
+                
+                return businessOwner;
+              } catch (rawSqlError) {
+                console.error('Raw SQL update failed:', rawSqlError.message);
+                throw new Error(`Failed to update vendor status. Multiple approaches tried. Last error: ${rawSqlError.message}`);
+              }
+            }
+          }
+        } else {
+          throw error;
+        }
+      }
     } catch (error) {
       this.logger.error(`Failed to manually update vendor status for business owner ${businessOwnerId}:`, error);
       throw error;

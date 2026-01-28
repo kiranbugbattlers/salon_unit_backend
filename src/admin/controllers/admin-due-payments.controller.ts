@@ -299,7 +299,6 @@ export class AdminDuePaymentsController {
         dueAmount: 1500.00,
         dueDate: '2024-01-15',
         description: 'Monthly commission payment for December 2023',
-        adminRemarks: 'Auto-generated from daily settlement',
       }
     }
   })
@@ -322,7 +321,6 @@ export class AdminDuePaymentsController {
       remainingAmount: createDto.dueAmount,
       dueDate: new Date(createDto.dueDate),
       description: createDto.description,
-      adminRemarks: createDto.adminRemarks,
       salonName: businessOwner.businessName,
       ownerName: businessOwner?.firstName && businessOwner?.lastName
         ? `${businessOwner.firstName} ${businessOwner.lastName}`.trim()
@@ -374,7 +372,6 @@ export class AdminDuePaymentsController {
       example: {
         paidAmount: 750.00,
         status: 'partially_paid',
-        adminRemarks: 'Partial payment received via bank transfer',
       }
     }
   })
@@ -436,12 +433,6 @@ export class AdminDuePaymentsController {
       }
       
       this.logger.log(`Updated status to: ${duePayment.status}`);
-    }
-
-    // Update admin remarks
-    if (updateDto.adminRemarks !== undefined) {
-      duePayment.adminRemarks = updateDto.adminRemarks;
-      this.logger.log(`Updated admin remarks: ${duePayment.adminRemarks}`);
     }
 
     // Update business enabled status

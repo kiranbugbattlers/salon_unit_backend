@@ -1,10 +1,11 @@
 import { Repository } from 'typeorm';
-import { BusinessOwner } from '../../database/entities';
+import { BusinessOwner, BusinessApproval } from '../../database/entities';
 import { VendorStatus } from '../../common/enums/vendor-status.enum';
 import { AddVendorCreditDto, VendorCreditStatusDto } from '../dto/vendor-credit-management.dto';
 export declare class VendorCreditManagementService {
     private readonly businessOwnerRepository;
-    constructor(businessOwnerRepository: Repository<BusinessOwner>);
+    private readonly approvalRepository;
+    constructor(businessOwnerRepository: Repository<BusinessOwner>, approvalRepository: Repository<BusinessApproval>);
     addCreditToVendor(businessOwnerId: string, addCreditDto: AddVendorCreditDto): Promise<{
         id: string;
         shopId: string;

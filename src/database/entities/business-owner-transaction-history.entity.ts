@@ -50,7 +50,7 @@ export class BusinessOwnerTransactionHistory {
   transactionDate: Date;
 
   @ApiProperty({ description: 'Previous balance before transaction' })
-  @Column({ name: 'previous_balance', type: 'decimal', precision: 12, scale: 2 })
+  @Column({ name: 'previous_balance', type: 'decimal', precision: 12, scale: 2, nullable: true })
   previousBalance: number;
 
   @ApiProperty({ 
@@ -61,7 +61,7 @@ export class BusinessOwnerTransactionHistory {
   transactionAmount: number;
 
   @ApiProperty({ description: 'Current balance after transaction' })
-  @Column({ name: 'current_balance', type: 'decimal', precision: 12, scale: 2 })
+  @Column({ name: 'current_balance', type: 'decimal', precision: 12, scale: 2, nullable: true })
   currentBalance: number;
 
   @ApiProperty({ 

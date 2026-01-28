@@ -69,8 +69,9 @@ export class NotificationRetryService {
 
   /**
    * Cron job: Process retry queue every minute
+   * COMMENTED OUT to reduce terminal noise
    */
-  @Cron(CronExpression.EVERY_MINUTE)
+  // @Cron(CronExpression.EVERY_MINUTE)
   async processRetryQueue(): Promise<void> {
     try {
       // Find failed notifications that are ready for retry

@@ -127,6 +127,16 @@ __decorate([
     __metadata("design:type", Number)
 ], BusinessOwner.prototype, "creditLimit", void 0);
 __decorate([
+    (0, swagger_1.ApiProperty)({ description: 'Additional remarks or notes about the business owner', required: false }),
+    (0, typeorm_1.Column)({ name: 'remark', type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], BusinessOwner.prototype, "remark", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: 'Alternate contact number for the business owner', required: false }),
+    (0, typeorm_1.Column)({ name: 'alternate_number', length: 20, nullable: true }),
+    __metadata("design:type", String)
+], BusinessOwner.prototype, "alternateNumber", void 0);
+__decorate([
     (0, swagger_1.ApiProperty)({ enum: vendor_status_enum_1.VendorStatus, description: 'Vendor status for service visibility' }),
     (0, typeorm_1.Column)({
         name: 'vendor_status',

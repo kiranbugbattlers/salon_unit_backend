@@ -187,7 +187,7 @@ curl -X GET "http://localhost:3000/api/v1/admin/due-payments/123e4567-e89b-12d3-
     "dueDate": "2024-01-15",
     "status": "partially_paid",
     "description": "Monthly commission payment",
-    "adminRemarks": "Partial payment received via bank transfer",
+    "remarks": "Partial payment received via bank transfer",
     "isBusinessEnabled": true,
     "createdAt": "2024-01-01T00:00:00.000Z",
     "updatedAt": "2024-01-10T00:00:00.000Z"
@@ -214,7 +214,7 @@ curl -X POST "http://localhost:3000/api/v1/admin/due-payments" \
     "dueAmount": 1500.00,
     "dueDate": "2024-01-15",
     "description": "Monthly commission payment for December 2023",
-    "adminRemarks": "Auto-generated from daily settlement"
+    "remarks": "Auto-generated from daily settlement"
   }'
 ```
 
@@ -233,7 +233,7 @@ curl -X POST "http://localhost:3000/api/v1/admin/due-payments" \
     "dueDate": "2024-01-15",
     "status": "pending",
     "description": "Monthly commission payment for December 2023",
-    "adminRemarks": "Auto-generated from daily settlement",
+    "remarks": "Auto-generated from daily settlement",
     "createdAt": "2024-01-01T00:00:00.000Z",
     "updatedAt": "2024-01-01T00:00:00.000Z"
   }
@@ -257,7 +257,7 @@ curl -X PUT "http://localhost:3000/api/v1/admin/due-payments/123e4567-e89b-12d3-
   -d '{
     "paidAmount": 750.00,
     "status": "partially_paid",
-    "adminRemarks": "Partial payment received via bank transfer"
+    "remarks": "Partial payment received via bank transfer"
   }'
 ```
 
@@ -269,7 +269,7 @@ curl -X PUT "http://localhost:3000/api/v1/admin/due-payments/123e4567-e89b-12d3-
   -d '{
     "paidAmount": 1500.00,
     "status": "paid",
-    "adminRemarks": "Full payment received"
+    "remarks": "Full payment received"
   }'
 ```
 
@@ -287,7 +287,7 @@ curl -X PUT "http://localhost:3000/api/v1/admin/due-payments/123e4567-e89b-12d3-
     "remainingAmount": 750.00,
     "dueDate": "2024-01-15",
     "status": "partially_paid",
-    "adminRemarks": "Partial payment received via bank transfer",
+    "remarks": "Partial payment received via bank transfer",
     "updatedAt": "2024-01-10T00:00:00.000Z"
   }
 }
@@ -418,7 +418,7 @@ curl -X GET "http://localhost:3000/api/v1/admin/due-payments"
 - `dueDate`: Date
 - `status`: Enum (pending, overdue, paid, partially_paid)
 - `description`: Text (optional)
-- `adminRemarks`: Text (optional)
+- `remarks`: Text (optional)
 - `isBusinessEnabled`: Boolean
 - `markedOverdueAt`: Timestamp (optional)
 - `createdAt`: Timestamp
@@ -460,6 +460,6 @@ curl -X GET "http://localhost:3000/api/v1/admin/due-payments"
   "dueAmount": 2500.00,
   "dueDate": "2024-02-15",
   "description": "Monthly commission for January 2024",
-  "adminRemarks": "Auto-generated from settlement system"
+  "remarks": "Auto-generated from settlement system"
 }
 ```

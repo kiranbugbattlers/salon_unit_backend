@@ -15,6 +15,7 @@ export declare class BusinessOwnerWalletController {
     getDailyStats(req: any, date?: string, startDate?: string, endDate?: string): Promise<any>;
     getDailyHistory(req: any, page?: number, limit?: number, startDate?: string, endDate?: string): Promise<any>;
     getTransactions(req: any, page?: number, limit?: number, category?: string, type?: string): Promise<any>;
+    getCompleteTransactionHistory(req: any, page?: number, limit?: number, category?: string, type?: string, fromDate?: string, toDate?: string): Promise<any>;
     getSettlements(req: any, page?: number, limit?: number, status?: string): Promise<any>;
     getSettlementDetails(req: any, id: string): Promise<any>;
     getEarningsReport(req: any, year?: number, month?: number): Promise<any>;

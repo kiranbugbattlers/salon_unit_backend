@@ -38,6 +38,8 @@ const config_1 = require("@nestjs/config");
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const app_module_1 = require("./app.module");
+const request_logger_middleware_1 = require("./common/middleware/request-logger.middleware");
+const url_normalization_middleware_1 = require("./common/middleware/url-normalization.middleware");
 const os = __importStar(require("os"));
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule, {
@@ -87,6 +89,10 @@ async function bootstrap() {
         preflightContinue: false,
         optionsSuccessStatus: 200,
     });
+    const requestLogger = new request_logger_middleware_1.RequestLoggerMiddleware();
+    app.use(requestLogger.use.bind(requestLogger));
+    const urlNormalizer = new url_normalization_middleware_1.UrlNormalizationMiddleware();
+    app.use((req, res, next) => urlNormalizer.use(req, res, next));
     app.setGlobalPrefix('api/v1');
     const config = new swagger_1.DocumentBuilder()
         .setTitle('Salon Booking API')

@@ -51,7 +51,7 @@ let VendorStatusController = class VendorStatusController {
             throw new common_1.BadRequestException(`Invalid status. Must be one of: ${validStatuses.join(', ')}`);
         }
         try {
-            const updatedBusinessOwner = await this.vendorStatusService.manuallyUpdateVendorStatus(businessOwnerId, updateDto.status, updateDto.adminRemarks);
+            const updatedBusinessOwner = await this.vendorStatusService.manuallyUpdateVendorStatus(businessOwnerId, updateDto.status, updateDto.remarks);
             return {
                 code: 200,
                 success: true,
@@ -61,7 +61,7 @@ let VendorStatusController = class VendorStatusController {
                     businessName: updatedBusinessOwner.businessName,
                     oldStatus: updatedBusinessOwner.vendorStatus,
                     newStatus: updateDto.status,
-                    adminRemarks: updateDto.adminRemarks,
+                    remarks: updateDto.remarks,
                 },
             };
         }
@@ -105,7 +105,7 @@ __decorate([
         schema: {
             example: {
                 status: 'active',
-                adminRemarks: 'Business owner verified and approved for active status',
+                remarks: 'Business owner verified and approved for active status',
             }
         }
     }),

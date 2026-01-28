@@ -35,14 +35,14 @@ async function addVendorCreditLimitFields() {
     }
 
     // Check and add admin_remarks column to business_approvals table
-    const adminRemarksCheck = await client.query(`
+    const remarksCheck = await client.query(`
       SELECT column_name 
       FROM information_schema.columns 
       WHERE table_name = 'business_approvals' 
       AND column_name = 'admin_remarks'
     `);
 
-    if (adminRemarksCheck.rows.length === 0) {
+    if (remarksCheck.rows.length === 0) {
       console.log('Adding admin_remarks column to business_approvals table...');
       
       await client.query(`

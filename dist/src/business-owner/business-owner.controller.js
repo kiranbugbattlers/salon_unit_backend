@@ -16,10 +16,10 @@ exports.BusinessOwnerController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const platform_express_1 = require("@nestjs/platform-express");
+const no_validation_pipe_1 = require("../common/pipes/no-validation.pipe");
 const business_owner_service_1 = require("./business-owner.service");
 const dto_1 = require("./dto");
 const entities_1 = require("../database/entities");
-const business_document_enum_1 = require("../common/enums/business-document.enum");
 let BusinessOwnerController = class BusinessOwnerController {
     constructor(businessOwnerService) {
         this.businessOwnerService = businessOwnerService;
@@ -112,14 +112,14 @@ let BusinessOwnerController = class BusinessOwnerController {
     async getBusinessDocuments(req) {
         return this.businessOwnerService.getBusinessDocuments(req.user.userId);
     }
-    async uploadBusinessDocument(file, documentType, req) {
+    async uploadBusinessDocument(file, req) {
+        console.log('Request body:', req.body);
+        console.log('Received file:', file);
+        console.log('Request headers:', req.headers);
         if (!file) {
-            throw new common_1.BadRequestException('No file provided');
+            throw new common_1.BadRequestException('No file provided. Please ensure you are sending the file with the key "file" in multipart form data.');
         }
-        if (!documentType) {
-            throw new common_1.BadRequestException('Document type is required');
-        }
-        return this.businessOwnerService.uploadBusinessDocument(req.user.userId, documentType, file);
+        return this.businessOwnerService.uploadBusinessDocumentForApproval(req.user.userId, file);
     }
 };
 exports.BusinessOwnerController = BusinessOwnerController;
@@ -1038,12 +1038,12 @@ __decorate([
     (0, common_1.Post)('documents'),
     (0, swagger_1.ApiBearerAuth)('JWT'),
     (0, swagger_1.ApiOperation)({
-        summary: 'Upload business document',
-        description: 'Upload a KYC document (Aadhar, PAN, etc.) for the business owner.',
+        summary: 'Upload business document for approval',
+        description: 'Upload a KYC document (image or PDF) for the business owner approval process.',
     }),
     (0, swagger_1.ApiConsumes)('multipart/form-data'),
     (0, swagger_1.ApiBody)({
-        description: 'Document file and type',
+        description: 'Document file',
         schema: {
             type: 'object',
             properties: {
@@ -1052,23 +1052,18 @@ __decorate([
                     format: 'binary',
                     description: 'Document file (jpg, png, webp, pdf)',
                 },
-                documentType: {
-                    type: 'string',
-                    enum: Object.values(business_document_enum_1.DocumentType),
-                    description: 'Type of document being uploaded',
-                },
             },
-            required: ['file', 'documentType'],
+            required: ['file'],
         },
     }),
     (0, swagger_1.ApiResponse)({
         status: 201,
-        description: 'Document uploaded successfully',
+        description: 'Document uploaded successfully and saved for approval',
         type: dto_1.BusinessDocumentResponseDto,
     }),
     (0, swagger_1.ApiResponse)({
         status: 400,
-        description: 'Bad request - Invalid file or document type',
+        description: 'Bad request - Invalid file',
     }),
     (0, swagger_1.ApiResponse)({
         status: 401,
@@ -1078,12 +1073,31 @@ __decorate([
         status: 404,
         description: 'Business owner not found',
     }),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file')),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', {
+        limits: {
+            fileSize: 5 * 1024 * 1024,
+        },
+        fileFilter: (req, file, callback) => {
+            console.log('File filter called with:', file);
+            const allowedMimes = [
+                'image/jpeg',
+                'image/png',
+                'image/webp',
+                'application/pdf',
+            ];
+            if (allowedMimes.includes(file.mimetype)) {
+                callback(null, true);
+            }
+            else {
+                callback(new common_1.BadRequestException('Invalid file type. Only JPG, PNG, WebP, and PDF files are allowed.'), false);
+            }
+        },
+    })),
+    (0, common_1.UsePipes)(no_validation_pipe_1.NoValidationPipe),
     __param(0, (0, common_1.UploadedFile)()),
-    __param(1, (0, common_1.Body)('documentType')),
-    __param(2, (0, common_1.Req)()),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String, Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], BusinessOwnerController.prototype, "uploadBusinessDocument", null);
 exports.BusinessOwnerController = BusinessOwnerController = __decorate([

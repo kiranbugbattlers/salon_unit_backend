@@ -67,7 +67,7 @@ __decorate([
 ], BusinessOwnerTransactionHistory.prototype, "transactionDate", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ description: 'Previous balance before transaction' }),
-    (0, typeorm_1.Column)({ name: 'previous_balance', type: 'decimal', precision: 12, scale: 2 }),
+    (0, typeorm_1.Column)({ name: 'previous_balance', type: 'decimal', precision: 12, scale: 2, nullable: true }),
     __metadata("design:type", Number)
 ], BusinessOwnerTransactionHistory.prototype, "previousBalance", void 0);
 __decorate([
@@ -80,7 +80,7 @@ __decorate([
 ], BusinessOwnerTransactionHistory.prototype, "transactionAmount", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ description: 'Current balance after transaction' }),
-    (0, typeorm_1.Column)({ name: 'current_balance', type: 'decimal', precision: 12, scale: 2 }),
+    (0, typeorm_1.Column)({ name: 'current_balance', type: 'decimal', precision: 12, scale: 2, nullable: true }),
     __metadata("design:type", Number)
 ], BusinessOwnerTransactionHistory.prototype, "currentBalance", void 0);
 __decorate([

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import 'reflect-metadata';
@@ -8,7 +8,7 @@ import { APP_GUARD } from '@nestjs/core';
 import appConfig from './config/app.config';
 import { DatabaseService } from './config/database.service';
 import { SupabaseService } from './config/supabase.service';
-
+import { UrlNormalizationMiddleware } from './common/middleware/url-normalization.middleware';
 import { AuthModule } from './auth/auth.module';
 import { CustomerModule } from './customer/customer.module';
 import { BusinessOwnerModule } from './business-owner/business-owner.module';
@@ -28,10 +28,10 @@ import { SupportMemberModule } from './support-member/support-member.module';
 import { WalletModule } from './wallet/wallet.module';
 import { NotificationModule } from './notification/notification.module';
 import { ReviewModule } from './review/review.module';
-
+import { BookingHistoryModule } from './booking-history/booking-history.module';
+import { SettlementModule } from './settlement/settlement.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
-
 import * as entities from './database/entities';
 
 @Module({
@@ -48,11 +48,11 @@ import * as entities from './database/entities';
       useFactory: (configService: ConfigService) => {
         const dbMode = configService.get('app.dbMode');
         const isSupabase = dbMode === 'supabase';
-        
+
         const dbConfig = isSupabase
           ? configService.get('app.supabase.database')
           : configService.get('app.database');
-        
+
         return {
           type: 'postgres',
           host: dbConfig.host,
@@ -123,8 +123,8 @@ import * as entities from './database/entities';
             entities.NotificationLog,
             entities.ScheduledNotification,
           ],
-          synchronize: configService.get('app.environment') === 'development',
-          logging: configService.get('app.environment') === 'development',
+          synchronize: false, // Disabled to prevent enum conflicts - use migrations instead
+          logging: false, // Disabled to reduce terminal noise
           ssl: isSupabase ? { rejectUnauthorized: false } : false,
           extra: isSupabase ? {
             ssl: {
@@ -155,6 +155,8 @@ import * as entities from './database/entities';
     WalletModule,
     NotificationModule,
     ReviewModule,
+    BookingHistoryModule,
+    SettlementModule,
   ],
   providers: [
     DatabaseService,
@@ -169,4 +171,10 @@ import * as entities from './database/entities';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(UrlNormalizationMiddleware)
+      .forRoutes('*');
+  }
+}

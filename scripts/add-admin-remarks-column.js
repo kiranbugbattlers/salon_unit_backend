@@ -1,6 +1,6 @@
 const { Client } = require('pg');
 
-async function addAdminRemarksColumn() {
+async function addremarksColumn() {
   const client = new Client({
     host: process.env.DATABASE_HOST || 'localhost',
     port: parseInt(process.env.DATABASE_PORT) || 5432,
@@ -58,4 +58,4 @@ async function addAdminRemarksColumn() {
 // Load environment variables
 require('dotenv').config();
 
-addAdminRemarksColumn();
+addremarksColumn();

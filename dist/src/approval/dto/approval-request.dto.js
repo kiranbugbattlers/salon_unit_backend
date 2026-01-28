@@ -112,4 +112,18 @@ __decorate([
     }),
     __metadata("design:type", String)
 ], ApprovalRequestDto.prototype, "vendorStatus", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Alternate contact number for the business owner',
+        required: false
+    }),
+    __metadata("design:type", String)
+], ApprovalRequestDto.prototype, "alternateNumber", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Additional remarks or notes about the business owner',
+        required: false
+    }),
+    __metadata("design:type", String)
+], ApprovalRequestDto.prototype, "remark", void 0);
 //# sourceMappingURL=approval-request.dto.js.map

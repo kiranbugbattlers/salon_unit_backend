@@ -101,6 +101,14 @@ export class BusinessOwner {
   @Column({ name: 'credit_limit', type: 'decimal', precision: 12, scale: 2, nullable: true, default: 0 })
   creditLimit?: number;
 
+  @ApiProperty({ description: 'Additional remarks or notes about the business owner', required: false })
+  @Column({ name: 'remark', type: 'text', nullable: true })
+  remark?: string;
+
+  @ApiProperty({ description: 'Alternate contact number for the business owner', required: false })
+  @Column({ name: 'alternate_number', length: 20, nullable: true })
+  alternateNumber?: string;
+
   @ApiProperty({ enum: VendorStatus, description: 'Vendor status for service visibility' })
   @Column({
     name: 'vendor_status',

@@ -113,7 +113,7 @@ export class AdminTransactionHistoryItemDto {
   @ApiProperty({ description: 'Commission remarks' })
   @IsOptional()
   @IsString()
-  commissionRemarks?: string;
+  commissionremarks?: string;
 }
 
 export class DayWiseAdminTransactionHistoryDto {

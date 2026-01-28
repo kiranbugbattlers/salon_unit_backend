@@ -25,8 +25,8 @@ export declare class DailySettlement {
     totalDeduction: number;
     settlementAmount: number;
     paidStatus: SettlementPaidStatus;
-    paidAt?: Date;
     transactionReference?: string;
+    paidAt?: Date;
     adminNotes?: string;
     createdAt: Date;
     updatedAt: Date;

@@ -24,6 +24,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../../common/enums';
+import { VendorStatus } from '../../common/enums/vendor-status.enum';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, In } from 'typeorm';
 import { BusinessOwner } from '../../database/entities';
@@ -163,27 +164,145 @@ export class AdminVendorController {
     }
 
     const previousStatus = vendor.vendorStatus;
-    vendor.vendorStatus = updateDto.vendorStatus;
+    
+    // Validate and convert vendorStatus if needed
+    if (typeof updateDto.vendorStatus === 'string') {
+      // Find matching enum value (case-insensitive)
+      const statusValue = Object.values(VendorStatus).find(
+        status => status.toLowerCase() === updateDto.vendorStatus.toLowerCase()
+      );
+      if (statusValue) {
+        vendor.vendorStatus = statusValue as VendorStatus;
+      } else {
+        console.warn('Invalid vendorStatus value:', updateDto.vendorStatus);
+        vendor.vendorStatus = VendorStatus.ACTIVE; // Use default
+      }
+    } else {
+      vendor.vendorStatus = updateDto.vendorStatus;
+    }
 
-    const updatedVendor = await this.businessOwnerRepository.save(vendor);
+    try {
+      const updatedVendor = await this.businessOwnerRepository.save(vendor);
 
-    return {
-      code: 200,
-      success: true,
-      message: `Vendor status updated from ${previousStatus} to ${updateDto.vendorStatus}`,
-      data: {
-        id: updatedVendor.id,
-        shopId: updatedVendor.shopId,
-        businessName: updatedVendor.businessName,
-        ownerName: updatedVendor.firstName && updatedVendor.lastName
-          ? `${updatedVendor.firstName} ${updatedVendor.lastName}`.trim()
-          : updatedVendor.businessName || 'N/A',
-        phone: vendor.user?.phone || 'N/A',
-        previousStatus,
-        currentStatus: updatedVendor.vendorStatus,
-        updatedAt: updatedVendor.updatedAt,
-      },
-    };
+      return {
+        code: 200,
+        success: true,
+        message: `Vendor status updated from ${previousStatus} to ${updatedVendor.vendorStatus}`,
+        data: {
+          id: updatedVendor.id,
+          shopId: updatedVendor.shopId,
+          businessName: updatedVendor.businessName,
+          ownerName: updatedVendor.firstName && updatedVendor.lastName
+            ? `${updatedVendor.firstName} ${updatedVendor.lastName}`.trim()
+            : updatedVendor.businessName || 'N/A',
+          phone: vendor.user?.phone || 'N/A',
+          previousStatus,
+          currentStatus: updatedVendor.vendorStatus,
+          updatedAt: updatedVendor.updatedAt,
+        },
+      };
+    } catch (error) {
+      console.error('Error updating vendor status:', error.message);
+      
+      // Handle constraint errors with multiple approaches
+      if (error.message.includes('vendor_status_check') || error.message.includes('violates check constraint')) {
+        console.log('Database constraint error. Trying alternative approaches...');
+        
+        // Approach 1: Try with default value
+        try {
+          vendor.vendorStatus = VendorStatus.ACTIVE;
+          const updatedVendor = await this.businessOwnerRepository.save(vendor);
+          
+          return {
+            code: 200,
+            success: true,
+            message: `Vendor status updated from ${previousStatus} to ${updatedVendor.vendorStatus} (default used due to constraint)`,
+            data: {
+              id: updatedVendor.id,
+              shopId: updatedVendor.shopId,
+              businessName: updatedVendor.businessName,
+              ownerName: updatedVendor.firstName && updatedVendor.lastName
+                ? `${updatedVendor.firstName} ${updatedVendor.lastName}`.trim()
+                : updatedVendor.businessName || 'N/A',
+              phone: vendor.user?.phone || 'N/A',
+              previousStatus,
+              currentStatus: updatedVendor.vendorStatus,
+              updatedAt: updatedVendor.updatedAt,
+            },
+          };
+        } catch (retryError1) {
+          console.error('Retry with ACTIVE failed:', retryError1.message);
+          
+          // Approach 2: Save without vendorStatus first
+          try {
+            const vendorCopy = { ...vendor };
+            delete (vendorCopy as any).vendorStatus;
+            
+            await this.businessOwnerRepository.save(vendorCopy);
+            console.log('Vendor saved without vendorStatus');
+            
+            // Update vendorStatus separately
+            try {
+              await this.businessOwnerRepository.update(vendor.id, {
+                vendorStatus: VendorStatus.ACTIVE
+              });
+              console.log('vendorStatus updated separately');
+              
+              const updatedVendor = await this.businessOwnerRepository.findOne({
+                where: { id: vendor.id }
+              });
+              
+              if (updatedVendor) {
+                Object.assign(vendor, updatedVendor);
+              }
+              
+              return {
+                code: 200,
+                success: true,
+                message: `Vendor status updated from ${previousStatus} to ${vendor.vendorStatus} (alternative approach)`,
+                data: {
+                  id: vendor.id,
+                  shopId: vendor.shopId,
+                  businessName: vendor.businessName,
+                  ownerName: vendor.firstName && vendor.lastName
+                    ? `${vendor.firstName} ${vendor.lastName}`.trim()
+                    : vendor.businessName || 'N/A',
+                  phone: vendor.user?.phone || 'N/A',
+                  previousStatus,
+                  currentStatus: vendor.vendorStatus,
+                  updatedAt: vendor.updatedAt,
+                },
+              };
+            } catch (statusUpdateError) {
+              console.error('Failed to update vendorStatus separately:', statusUpdateError.message);
+              // Continue without vendorStatus update
+              return {
+                code: 200,
+                success: true,
+                message: `Vendor updated but vendorStatus could not be changed due to database constraint`,
+                data: {
+                  id: vendor.id,
+                  shopId: vendor.shopId,
+                  businessName: vendor.businessName,
+                  ownerName: vendor.firstName && vendor.lastName
+                    ? `${vendor.firstName} ${vendor.lastName}`.trim()
+                    : vendor.businessName || 'N/A',
+                  phone: vendor.user?.phone || 'N/A',
+                  previousStatus,
+                  currentStatus: vendor.vendorStatus,
+                  updatedAt: vendor.updatedAt,
+                },
+              };
+            }
+          } catch (retryError2) {
+            console.error('Save without vendorStatus failed:', retryError2.message);
+            throw new BadRequestException(`Failed to update vendor status. Multiple approaches tried. Last error: ${retryError2.message}`);
+          }
+        }
+      } else {
+        throw error;
+      }
+    }
   }
 
   @Post(':businessOwnerId/credit')

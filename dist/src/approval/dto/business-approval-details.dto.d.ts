@@ -65,6 +65,8 @@ export declare class BusinessOwnerInfoDto {
     upiId?: string;
     creditLimit?: number;
     vendorStatus?: string;
+    alternateNumber?: string;
+    remark?: string;
 }
 export declare class BusinessInfoDto {
     id: string;
@@ -122,4 +124,6 @@ export declare class UpdateBusinessApprovalDto {
     upiId?: string;
     creditLimit?: number;
     vendorStatus?: string;
+    alternateNumber?: string;
+    remark?: string;
 }

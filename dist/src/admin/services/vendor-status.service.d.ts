@@ -6,7 +6,7 @@ export declare class VendorStatusService {
     private readonly logger;
     constructor(businessOwnerRepository: Repository<BusinessOwner>);
     updateVendorStatusOnApproval(businessOwnerId: string): Promise<void>;
-    manuallyUpdateVendorStatus(businessOwnerId: string, newStatus: VendorStatus, adminRemarks?: string): Promise<BusinessOwner>;
+    manuallyUpdateVendorStatus(businessOwnerId: string, newStatus: VendorStatus, remarks?: string): Promise<BusinessOwner>;
     getVendorStatusStats(): Promise<any>;
     calculateCreditUsage(businessOwnerId: string): Promise<{
         creditLimit: number;

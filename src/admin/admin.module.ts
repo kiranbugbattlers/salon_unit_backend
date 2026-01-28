@@ -13,6 +13,7 @@ import {
   VendorDuePayment,
   Wallet,
   WalletTransaction,
+  BusinessApproval,
 } from '../database/entities';
 import { S3Service } from '../common/services/s3.service';
 import {
@@ -51,6 +52,7 @@ import { WalletModule } from '../wallet/wallet.module';
       VendorDuePayment,
       Wallet,
       WalletTransaction,
+      BusinessApproval,
     ]),
     WalletModule,
   ],

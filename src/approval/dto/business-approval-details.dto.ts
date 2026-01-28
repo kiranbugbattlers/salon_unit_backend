@@ -183,6 +183,18 @@ export class BusinessOwnerInfoDto {
     required: false
   })
   vendorStatus?: string;
+
+  @ApiProperty({ 
+    description: 'Alternate contact number for the business owner',
+    required: false
+  })
+  alternateNumber?: string;
+
+  @ApiProperty({ 
+    description: 'Additional remarks or notes about the business owner',
+    required: false
+  })
+  remark?: string;
 }
 
 export class BusinessInfoDto {
@@ -380,4 +392,20 @@ export class UpdateBusinessApprovalDto {
   @IsOptional()
   @IsString()
   vendorStatus?: string;
+
+  @ApiProperty({ 
+    description: 'Alternate contact number for the business owner',
+    required: false
+  })
+  @IsOptional()
+  @IsString()
+  alternateNumber?: string;
+
+  @ApiProperty({ 
+    description: 'Additional remarks or notes about the business owner',
+    required: false
+  })
+  @IsOptional()
+  @IsString()
+  remark?: string;
 }

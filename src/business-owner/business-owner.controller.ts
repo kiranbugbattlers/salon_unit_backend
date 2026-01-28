@@ -15,6 +15,8 @@ import {
   HttpStatus,
   BadRequestException,
   Query,
+  ValidationPipe,
+  UsePipes,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -28,6 +30,7 @@ import {
 } from '@nestjs/swagger';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { Public } from '../common/decorators/public.decorator';
+import { NoValidationPipe } from '../common/pipes/no-validation.pipe';
 import { BusinessOwnerService } from './business-owner.service';
 import {
   BusinessOwnerOnboardingStep1Dto,
@@ -57,6 +60,7 @@ import {
   UpdateDeliverySettingsDto,
   BusinessDocumentResponseDto,
   BusinessDocumentListResponseDto,
+  UploadBusinessDocumentDto,
 } from './dto';
 import { BusinessSettings } from '../database/entities';
 import { DocumentType } from '../common/enums/business-document.enum';
@@ -982,12 +986,12 @@ export class BusinessOwnerController {
   @Post('documents')
   @ApiBearerAuth('JWT')
   @ApiOperation({
-    summary: 'Upload business document',
-    description: 'Upload a KYC document (Aadhar, PAN, etc.) for the business owner.',
+    summary: 'Upload business document for approval',
+    description: 'Upload a KYC document (image or PDF) for the business owner approval process.',
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
-    description: 'Document file and type',
+    description: 'Document file',
     schema: {
       type: 'object',
       properties: {
@@ -996,23 +1000,18 @@ export class BusinessOwnerController {
           format: 'binary',
           description: 'Document file (jpg, png, webp, pdf)',
         },
-        documentType: {
-          type: 'string',
-          enum: Object.values(DocumentType),
-          description: 'Type of document being uploaded',
-        },
       },
-      required: ['file', 'documentType'],
+      required: ['file'],
     },
   })
   @ApiResponse({
     status: 201,
-    description: 'Document uploaded successfully',
+    description: 'Document uploaded successfully and saved for approval',
     type: BusinessDocumentResponseDto,
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad request - Invalid file or document type',
+    description: 'Bad request - Invalid file',
   })
   @ApiResponse({
     status: 401,
@@ -1022,18 +1021,41 @@ export class BusinessOwnerController {
     status: 404,
     description: 'Business owner not found',
   })
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB limit
+      },
+      fileFilter: (req, file, callback) => {
+        console.log('File filter called with:', file);
+        // Allow common image and document formats
+        const allowedMimes = [
+          'image/jpeg',
+          'image/png',
+          'image/webp',
+          'application/pdf',
+        ];
+        if (allowedMimes.includes(file.mimetype)) {
+          callback(null, true);
+        } else {
+          callback(new BadRequestException('Invalid file type. Only JPG, PNG, WebP, and PDF files are allowed.'), false);
+        }
+      },
+    }),
+  )
+  @UsePipes(NoValidationPipe)
   async uploadBusinessDocument(
-    @UploadedFile() file: any,
-    @Body('documentType') documentType: DocumentType,
+    @UploadedFile() file: Express.Multer.File,
     @Req() req: any,
   ): Promise<BusinessDocumentResponseDto> {
+    console.log('Request body:', req.body);
+    console.log('Received file:', file);
+    console.log('Request headers:', req.headers);
+    
     if (!file) {
-      throw new BadRequestException('No file provided');
+      throw new BadRequestException('No file provided. Please ensure you are sending the file with the key "file" in multipart form data.');
     }
-    if (!documentType) {
-      throw new BadRequestException('Document type is required');
-    }
-    return this.businessOwnerService.uploadBusinessDocument(req.user.userId, documentType, file);
+    
+    return this.businessOwnerService.uploadBusinessDocumentForApproval(req.user.userId, file);
   }
 }

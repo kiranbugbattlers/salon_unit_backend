@@ -90,6 +90,7 @@ let BusinessOwnerWalletController = class BusinessOwnerWalletController {
     }
     async getTransactions(req, page, limit, category, type) {
         const userId = req.user.userId;
+        const businessOwnerId = req.user.businessOwnerId;
         const wallet = await this.walletService.getOrCreateWallet(userId, entities_1.WalletUserType.BUSINESS_OWNER);
         const result = await this.walletService.getTransactions(wallet.id, {
             page: page ? parseInt(String(page)) : 1,
@@ -102,6 +103,35 @@ let BusinessOwnerWalletController = class BusinessOwnerWalletController {
             success: true,
             message: 'Transaction history retrieved',
             data: result,
+        };
+    }
+    async getCompleteTransactionHistory(req, page, limit, category, type, fromDate, toDate) {
+        const userId = req.user.userId;
+        const businessOwnerId = req.user.businessOwnerId;
+        const wallet = await this.walletService.getOrCreateWallet(userId, entities_1.WalletUserType.BUSINESS_OWNER);
+        const result = await this.walletService.getTransactions(wallet.id, {
+            page: page ? parseInt(String(page)) : 1,
+            limit: limit ? parseInt(String(limit)) : 20,
+            category: category,
+            type: type,
+            startDate: fromDate ? new Date(fromDate) : undefined,
+            endDate: toDate ? new Date(toDate) : undefined,
+        });
+        return {
+            code: 200,
+            success: true,
+            message: 'Complete transaction history retrieved',
+            data: {
+                ...result,
+                businessOwnerId,
+                filterInfo: {
+                    businessOwnerId,
+                    category,
+                    type,
+                    fromDate,
+                    toDate,
+                }
+            },
         };
     }
     async getSettlements(req, page, limit, status) {
@@ -311,6 +341,48 @@ __decorate([
     __metadata("design:paramtypes", [Object, Number, Number, String, String]),
     __metadata("design:returntype", Promise)
 ], BusinessOwnerWalletController.prototype, "getTransactions", null);
+__decorate([
+    (0, common_1.Get)('transaction-history'),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.BUSINESS_OWNER),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Get complete transaction history',
+        description: `
+      Get comprehensive transaction history for the logged-in business owner.
+      
+      This endpoint shows wallet transactions filtered by your business owner ID from JWT token.
+      
+      Includes:
+      - Wallet transactions (credits/debits)
+      - Commission deductions
+      - Settlement transactions
+      - Refunds and adjustments
+    `,
+    }),
+    (0, swagger_1.ApiQuery)({ name: 'page', required: false, example: 1 }),
+    (0, swagger_1.ApiQuery)({ name: 'limit', required: false, example: 20 }),
+    (0, swagger_1.ApiQuery)({ name: 'category', required: false, enum: ['commission', 'settlement', 'refund', 'adjustment'] }),
+    (0, swagger_1.ApiQuery)({ name: 'type', required: false, enum: ['credit', 'debit'] }),
+    (0, swagger_1.ApiQuery)({ name: 'fromDate', required: false, description: 'Filter by start date (YYYY-MM-DD)' }),
+    (0, swagger_1.ApiQuery)({ name: 'toDate', required: false, description: 'Filter by end date (YYYY-MM-DD)' }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Complete transaction history retrieved successfully',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 401,
+        description: 'Unauthorized',
+    }),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Query)('page')),
+    __param(2, (0, common_1.Query)('limit')),
+    __param(3, (0, common_1.Query)('category')),
+    __param(4, (0, common_1.Query)('type')),
+    __param(5, (0, common_1.Query)('fromDate')),
+    __param(6, (0, common_1.Query)('toDate')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Number, Number, String, String, String, String]),
+    __metadata("design:returntype", Promise)
+], BusinessOwnerWalletController.prototype, "getCompleteTransactionHistory", null);
 __decorate([
     (0, common_1.Get)('settlements'),
     (0, roles_decorator_1.Roles)(enums_1.UserRole.BUSINESS_OWNER),

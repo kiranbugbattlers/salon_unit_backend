@@ -22,4 +22,6 @@ export declare class ApprovalRequestDto {
     upiId?: string;
     creditLimit?: number;
     vendorStatus?: string;
+    alternateNumber?: string;
+    remark?: string;
 }

@@ -52,6 +52,7 @@ const core_1 = require("@nestjs/core");
 const app_config_1 = __importDefault(require("./config/app.config"));
 const database_service_1 = require("./config/database.service");
 const supabase_service_1 = require("./config/supabase.service");
+const url_normalization_middleware_1 = require("./common/middleware/url-normalization.middleware");
 const auth_module_1 = require("./auth/auth.module");
 const customer_module_1 = require("./customer/customer.module");
 const business_owner_module_1 = require("./business-owner/business-owner.module");
@@ -72,13 +73,15 @@ const wallet_module_1 = require("./wallet/wallet.module");
 const notification_module_1 = require("./notification/notification.module");
 const review_module_1 = require("./review/review.module");
 const booking_history_module_1 = require("./booking-history/booking-history.module");
+const settlement_module_1 = require("./settlement/settlement.module");
 const jwt_auth_guard_1 = require("./common/guards/jwt-auth.guard");
 const roles_guard_1 = require("./common/guards/roles.guard");
-const request_logger_middleware_1 = require("./common/middleware/request-logger.middleware");
 const entities = __importStar(require("./database/entities"));
 let AppModule = class AppModule {
     configure(consumer) {
-        consumer.apply(request_logger_middleware_1.RequestLoggerMiddleware).forRoutes('*');
+        consumer
+            .apply(url_normalization_middleware_1.UrlNormalizationMiddleware)
+            .forRoutes('*');
     }
 };
 exports.AppModule = AppModule;
@@ -201,6 +204,7 @@ exports.AppModule = AppModule = __decorate([
             notification_module_1.NotificationModule,
             review_module_1.ReviewModule,
             booking_history_module_1.BookingHistoryModule,
+            settlement_module_1.SettlementModule,
         ],
         providers: [
             database_service_1.DatabaseService,

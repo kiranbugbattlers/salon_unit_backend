@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { ValidationPipe, BadRequestException, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
+import { UrlNormalizationMiddleware } from './common/middleware/url-normalization.middleware';
 import * as os from 'os';
 
 async function bootstrap() {
@@ -63,6 +65,13 @@ async function bootstrap() {
     optionsSuccessStatus: 200, // Some legacy browsers choke on 204
   });
 
+  // Add request logger middleware
+  const requestLogger = new RequestLoggerMiddleware();
+  app.use(requestLogger.use.bind(requestLogger));
+
+  // Add URL normalization middleware to handle double slashes
+  const urlNormalizer = new UrlNormalizationMiddleware();
+  app.use((req, res, next) => urlNormalizer.use(req, res, next));
 
   // Global prefix
   app.setGlobalPrefix('api/v1');

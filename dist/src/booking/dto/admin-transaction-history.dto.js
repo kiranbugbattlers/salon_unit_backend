@@ -149,7 +149,7 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
-], AdminTransactionHistoryItemDto.prototype, "commissionRemarks", void 0);
+], AdminTransactionHistoryItemDto.prototype, "commissionremarks", void 0);
 class DayWiseAdminTransactionHistoryDto {
 }
 exports.DayWiseAdminTransactionHistoryDto = DayWiseAdminTransactionHistoryDto;

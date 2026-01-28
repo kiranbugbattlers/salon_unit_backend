@@ -203,6 +203,7 @@ export class BusinessOwnerWalletController {
     @Query('type') type?: string,
   ): Promise<any> {
     const userId = req.user.userId;
+    const businessOwnerId = req.user.businessOwnerId;
     const wallet = await this.walletService.getOrCreateWallet(userId, WalletUserType.BUSINESS_OWNER);
 
     const result = await this.walletService.getTransactions(wallet.id, {
@@ -217,6 +218,76 @@ export class BusinessOwnerWalletController {
       success: true,
       message: 'Transaction history retrieved',
       data: result,
+    };
+  }
+
+  @Get('transaction-history')
+  @Roles(UserRole.BUSINESS_OWNER)
+  @ApiOperation({
+    summary: 'Get complete transaction history',
+    description: `
+      Get comprehensive transaction history for the logged-in business owner.
+      
+      This endpoint shows wallet transactions filtered by your business owner ID from JWT token.
+      
+      Includes:
+      - Wallet transactions (credits/debits)
+      - Commission deductions
+      - Settlement transactions
+      - Refunds and adjustments
+    `,
+  })
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 20 })
+  @ApiQuery({ name: 'category', required: false, enum: ['commission', 'settlement', 'refund', 'adjustment'] })
+  @ApiQuery({ name: 'type', required: false, enum: ['credit', 'debit'] })
+  @ApiQuery({ name: 'fromDate', required: false, description: 'Filter by start date (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'toDate', required: false, description: 'Filter by end date (YYYY-MM-DD)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Complete transaction history retrieved successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  async getCompleteTransactionHistory(
+    @Request() req: any,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('category') category?: string,
+    @Query('type') type?: string,
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+  ): Promise<any> {
+    const userId = req.user.userId;
+    const businessOwnerId = req.user.businessOwnerId;
+    const wallet = await this.walletService.getOrCreateWallet(userId, WalletUserType.BUSINESS_OWNER);
+
+    const result = await this.walletService.getTransactions(wallet.id, {
+      page: page ? parseInt(String(page)) : 1,
+      limit: limit ? parseInt(String(limit)) : 20,
+      category: category as any,
+      type: type as any,
+      startDate: fromDate ? new Date(fromDate) : undefined,
+      endDate: toDate ? new Date(toDate) : undefined,
+    });
+
+    return {
+      code: 200,
+      success: true,
+      message: 'Complete transaction history retrieved',
+      data: {
+        ...result,
+        businessOwnerId, // Include for reference
+        filterInfo: {
+          businessOwnerId,
+          category,
+          type,
+          fromDate,
+          toDate,
+        }
+      },
     };
   }
 

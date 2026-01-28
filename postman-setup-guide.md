@@ -129,7 +129,7 @@ Find a business owner ID from your database or use one of these test IDs:
     "dueAmount": 1500.00,
     "dueDate": "2024-02-15",
     "description": "Monthly commission payment",
-    "adminRemarks": "Test payment"
+    "remarks": "Test payment"
 }
 ```
 
@@ -138,7 +138,7 @@ Find a business owner ID from your database or use one of these test IDs:
 {
     "paidAmount": 750.00,
     "status": "partially_paid",
-    "adminRemarks": "Partial payment received"
+    "remarks": "Partial payment received"
 }
 ```
 
@@ -147,7 +147,7 @@ Find a business owner ID from your database or use one of these test IDs:
 {
     "paidAmount": 1500.00,
     "status": "paid",
-    "adminRemarks": "Full payment completed"
+    "remarks": "Full payment completed"
 }
 ```
 

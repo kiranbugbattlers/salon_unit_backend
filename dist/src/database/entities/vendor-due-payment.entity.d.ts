@@ -21,7 +21,6 @@ export declare class VendorDuePayment {
     status: DuePaymentStatus;
     description?: string;
     createdByAdminId?: string;
-    adminRemarks?: string;
     updatedByAdminId?: string;
     markedOverdueAt?: Date;
     createdAt: Date;

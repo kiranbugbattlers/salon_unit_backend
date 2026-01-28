@@ -255,6 +255,20 @@ __decorate([
     }),
     __metadata("design:type", String)
 ], BusinessOwnerInfoDto.prototype, "vendorStatus", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Alternate contact number for the business owner',
+        required: false
+    }),
+    __metadata("design:type", String)
+], BusinessOwnerInfoDto.prototype, "alternateNumber", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Additional remarks or notes about the business owner',
+        required: false
+    }),
+    __metadata("design:type", String)
+], BusinessOwnerInfoDto.prototype, "remark", void 0);
 class BusinessInfoDto {
 }
 exports.BusinessInfoDto = BusinessInfoDto;
@@ -491,4 +505,22 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateBusinessApprovalDto.prototype, "vendorStatus", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Alternate contact number for the business owner',
+        required: false
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateBusinessApprovalDto.prototype, "alternateNumber", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Additional remarks or notes about the business owner',
+        required: false
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateBusinessApprovalDto.prototype, "remark", void 0);
 //# sourceMappingURL=business-approval-details.dto.js.map

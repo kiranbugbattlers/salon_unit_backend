@@ -19,8 +19,9 @@ const typeorm_2 = require("typeorm");
 const entities_1 = require("../../database/entities");
 const vendor_status_enum_1 = require("../../common/enums/vendor-status.enum");
 let VendorCreditManagementService = class VendorCreditManagementService {
-    constructor(businessOwnerRepository) {
+    constructor(businessOwnerRepository, approvalRepository) {
         this.businessOwnerRepository = businessOwnerRepository;
+        this.approvalRepository = approvalRepository;
     }
     async addCreditToVendor(businessOwnerId, addCreditDto) {
         const vendor = await this.businessOwnerRepository.findOne({
@@ -39,6 +40,17 @@ let VendorCreditManagementService = class VendorCreditManagementService {
         vendor.vendorStatus = vendor_status_enum_1.VendorStatus.ACTIVE;
         vendor.isActive = true;
         const updatedVendor = await this.businessOwnerRepository.save(vendor);
+        const remarks = addCreditDto.reason;
+        if (remarks) {
+            const approval = await this.approvalRepository.findOne({
+                where: { businessOwnerId },
+                order: { createdAt: 'DESC' },
+            });
+            if (approval) {
+                approval.remark = remarks;
+                await this.approvalRepository.save(approval);
+            }
+        }
         return {
             id: updatedVendor.id,
             shopId: updatedVendor.shopId,
@@ -212,6 +224,8 @@ exports.VendorCreditManagementService = VendorCreditManagementService;
 exports.VendorCreditManagementService = VendorCreditManagementService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(entities_1.BusinessOwner)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __param(1, (0, typeorm_1.InjectRepository)(entities_1.BusinessApproval)),
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository])
 ], VendorCreditManagementService);
 //# sourceMappingURL=vendor-credit-management.service.js.map

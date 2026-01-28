@@ -155,7 +155,7 @@ async function createSampleVendorDuePayment() {
       console.log(`  Due Amount: ${payment.due_amount}`);
       console.log(`  Status: ${payment.status}`);
       console.log(`  Due Date: ${payment.due_date}`);
-      console.log(`  Admin Remarks: ${payment.admin_remarks}`);
+      console.log(`  Admin remarks: ${payment.admin_remarks}`);
       console.log('  ---');
     });
 

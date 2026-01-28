@@ -9,9 +9,20 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BusinessDocumentListResponseDto = exports.BusinessDocumentResponseDto = void 0;
+exports.BusinessDocumentListResponseDto = exports.BusinessDocumentResponseDto = exports.UploadBusinessDocumentDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
 const business_document_enum_1 = require("../../common/enums/business-document.enum");
+class UploadBusinessDocumentDto {
+}
+exports.UploadBusinessDocumentDto = UploadBusinessDocumentDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        type: 'string',
+        format: 'binary',
+        description: 'Document file (jpg, png, webp, pdf)',
+    }),
+    __metadata("design:type", Object)
+], UploadBusinessDocumentDto.prototype, "file", void 0);
 class BusinessDocumentResponseDto {
 }
 exports.BusinessDocumentResponseDto = BusinessDocumentResponseDto;

@@ -76,4 +76,16 @@ export class ApprovalRequestDto {
     required: false
   })
   vendorStatus?: string;
+
+  @ApiProperty({ 
+    description: 'Alternate contact number for the business owner',
+    required: false
+  })
+  alternateNumber?: string;
+
+  @ApiProperty({ 
+    description: 'Additional remarks or notes about the business owner',
+    required: false
+  })
+  remark?: string;
 }

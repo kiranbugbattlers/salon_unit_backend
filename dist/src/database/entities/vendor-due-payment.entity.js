@@ -112,11 +112,6 @@ __decorate([
     __metadata("design:type", String)
 ], VendorDuePayment.prototype, "createdByAdminId", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: 'Admin remarks about the due payment' }),
-    (0, typeorm_1.Column)({ name: 'admin_remarks', type: 'text', nullable: true }),
-    __metadata("design:type", String)
-], VendorDuePayment.prototype, "adminRemarks", void 0);
-__decorate([
     (0, swagger_1.ApiProperty)({ description: 'Admin who last updated this due payment' }),
     (0, typeorm_1.Column)({ name: 'updated_by_admin_id', nullable: true }),
     __metadata("design:type", String)

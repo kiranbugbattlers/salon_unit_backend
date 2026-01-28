@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThanOrEqual } from 'typeorm';
-import { BusinessOwner } from '../../database/entities';
+import { BusinessOwner, BusinessApproval } from '../../database/entities';
 import { VendorStatus } from '../../common/enums/vendor-status.enum';
 import { AddVendorCreditDto, VendorCreditStatusDto } from '../dto/vendor-credit-management.dto';
 
@@ -10,6 +10,8 @@ export class VendorCreditManagementService {
   constructor(
     @InjectRepository(BusinessOwner)
     private readonly businessOwnerRepository: Repository<BusinessOwner>,
+    @InjectRepository(BusinessApproval)
+    private readonly approvalRepository: Repository<BusinessApproval>,
   ) {}
 
   async addCreditToVendor(businessOwnerId: string, addCreditDto: AddVendorCreditDto) {
@@ -36,6 +38,20 @@ export class VendorCreditManagementService {
     vendor.isActive = true;
 
     const updatedVendor = await this.businessOwnerRepository.save(vendor);
+
+    // Save remarks to approval table if reason or remark is provided
+    const remarks = addCreditDto.reason;
+    if (remarks) {
+      const approval = await this.approvalRepository.findOne({
+        where: { businessOwnerId },
+        order: { createdAt: 'DESC' },
+      });
+
+      if (approval) {
+        approval.remark = remarks;
+        await this.approvalRepository.save(approval);
+      }
+    }
 
     return {
       id: updatedVendor.id,

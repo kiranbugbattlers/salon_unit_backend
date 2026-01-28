@@ -60,17 +60,17 @@ async function checkDatabaseTables() {
     }
 
     // Check business_approvals table for admin_remarks
-    console.log('\n=== CHECKING BUSINESS_APPROVALS TABLE FOR ADMIN_REMARKS ===');
-    const adminRemarksCheck = await client.query(`
+    console.log('\n=== CHECKING BUSINESS_APPROVALS TABLE FOR ADMIN_remarks ===');
+    const remarksCheck = await client.query(`
       SELECT column_name, data_type
       FROM information_schema.columns 
       WHERE table_name = 'business_approvals' 
       AND column_name = 'admin_remarks'
     `);
     
-    if (adminRemarksCheck.rows.length > 0) {
+    if (remarksCheck.rows.length > 0) {
       console.log('admin_remarks column exists:');
-      console.log(`  - ${adminRemarksCheck.rows[0].column_name}: ${adminRemarksCheck.rows[0].data_type}`);
+      console.log(`  - ${remarksCheck.rows[0].column_name}: ${remarksCheck.rows[0].data_type}`);
     } else {
       console.log('admin_remarks column NOT found in business_approvals table');
     }

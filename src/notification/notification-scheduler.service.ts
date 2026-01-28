@@ -96,8 +96,9 @@ export class NotificationSchedulerService {
 
   /**
    * Cron job: Process 24-hour reminders (runs every hour)
+   * COMMENTED OUT to reduce terminal noise
    */
-  @Cron(CronExpression.EVERY_HOUR)
+  // @Cron(CronExpression.EVERY_HOUR)
   async process24HourReminders(): Promise<void> {
     this.logger.debug('Processing 24-hour reminders...');
     await this.processReminders(ReminderType.REMINDER_24H);
@@ -105,8 +106,9 @@ export class NotificationSchedulerService {
 
   /**
    * Cron job: Process 2-hour reminders (runs every 15 minutes)
+   * COMMENTED OUT to reduce terminal noise
    */
-  @Cron(CronExpression.EVERY_30_MINUTES)
+  // @Cron(CronExpression.EVERY_30_MINUTES)
   async process2HourReminders(): Promise<void> {
     this.logger.debug('Processing 2-hour reminders...');
     await this.processReminders(ReminderType.REMINDER_2H);

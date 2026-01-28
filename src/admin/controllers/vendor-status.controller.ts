@@ -81,7 +81,7 @@ export class VendorStatusController {
     schema: {
       example: {
         status: 'active',
-        adminRemarks: 'Business owner verified and approved for active status',
+        remarks: 'Business owner verified and approved for active status',
       }
     }
   })
@@ -90,7 +90,7 @@ export class VendorStatusController {
   @ApiResponse({ status: 400, description: 'Invalid status value' })
   async manuallyUpdateVendorStatus(
     @Param('businessOwnerId') businessOwnerId: string,
-    @Body() updateDto: { status: VendorStatus; adminRemarks?: string },
+    @Body() updateDto: { status: VendorStatus; remarks?: string },
   ): Promise<any> {
     // Validate status value
     const validStatuses = Object.values(VendorStatus);
@@ -102,7 +102,7 @@ export class VendorStatusController {
       const updatedBusinessOwner = await this.vendorStatusService.manuallyUpdateVendorStatus(
         businessOwnerId,
         updateDto.status,
-        updateDto.adminRemarks,
+        updateDto.remarks,
       );
 
       return {
@@ -114,7 +114,7 @@ export class VendorStatusController {
           businessName: updatedBusinessOwner.businessName,
           oldStatus: updatedBusinessOwner.vendorStatus, // This would be the old status before update
           newStatus: updateDto.status,
-          adminRemarks: updateDto.adminRemarks,
+          remarks: updateDto.remarks,
         },
       };
     } catch (error) {

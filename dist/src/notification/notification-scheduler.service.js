@@ -245,18 +245,6 @@ let NotificationSchedulerService = NotificationSchedulerService_1 = class Notifi
 };
 exports.NotificationSchedulerService = NotificationSchedulerService;
 __decorate([
-    (0, schedule_1.Cron)(schedule_1.CronExpression.EVERY_HOUR),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", Promise)
-], NotificationSchedulerService.prototype, "process24HourReminders", null);
-__decorate([
-    (0, schedule_1.Cron)(schedule_1.CronExpression.EVERY_30_MINUTES),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", Promise)
-], NotificationSchedulerService.prototype, "process2HourReminders", null);
-__decorate([
     (0, schedule_1.Cron)(schedule_1.CronExpression.EVERY_DAY_AT_3AM),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),

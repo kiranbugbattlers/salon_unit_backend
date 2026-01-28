@@ -18,6 +18,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const entities_1 = require("../database/entities");
 const enums_1 = require("../common/enums");
+const vendor_status_enum_1 = require("../common/enums/vendor-status.enum");
 const dto_1 = require("./dto");
 const distance_calculator_service_1 = require("../common/services/distance-calculator.service");
 const notification_service_1 = require("../common/services/notification.service");
@@ -214,12 +215,31 @@ let ApprovalService = class ApprovalService {
         }
         businessOwner.isApproved = true;
         businessOwner.approvedAt = new Date();
-        await Promise.all([
-            this.approvalRepository.save(approval),
-            this.businessOwnerRepository.save(businessOwner),
-        ]);
+        businessOwner.vendorStatus = vendor_status_enum_1.VendorStatus.ACTIVE;
+        console.log('Setting vendorStatus to ACTIVE for approved business:', approval.businessOwnerId);
+        await this.approvalRepository.save(approval);
+        try {
+            const businessOwnerCopy = { ...businessOwner };
+            delete businessOwnerCopy.vendorStatus;
+            await this.businessOwnerRepository.save(businessOwnerCopy);
+            console.log('Business owner saved successfully without vendorStatus');
+            try {
+                await this.businessOwnerRepository.update(approval.businessOwnerId, {
+                    vendorStatus: vendor_status_enum_1.VendorStatus.ACTIVE
+                });
+                console.log('vendorStatus updated successfully to ACTIVE');
+            }
+            catch (statusUpdateError) {
+                console.error('Failed to update vendorStatus separately:', statusUpdateError.message);
+                console.log('Business approved but vendorStatus could not be updated');
+            }
+        }
+        catch (error) {
+            console.error('Error saving business owner:', error.message);
+            throw new common_1.BadRequestException(`Failed to approve business: ${error.message}`);
+        }
         await this.notificationService.notifyBusinessOfApprovalStatus(businessOwner.userId, businessOwner.businessName || 'Your Business', true, approveDto.reviewNotes);
-        return new api_response_dto_1.ApiResponseDto(200, true, 'Business approved successfully', null);
+        return new api_response_dto_1.ApiResponseDto(200, true, 'Business approved successfully and vendor status set to ACTIVE', null);
     }
     async rejectBusiness(approvalId, agentId, rejectDto) {
         const approval = await this.getApprovalForAgent(approvalId, agentId);
@@ -233,12 +253,19 @@ let ApprovalService = class ApprovalService {
         await this.approvalRepository.save(approval);
         const businessOwner = await this.businessOwnerRepository.findOne({
             where: { id: approval.businessOwnerId },
-            select: ['userId', 'businessName'],
         });
         if (businessOwner) {
-            await this.notificationService.notifyBusinessOfApprovalStatus(businessOwner.userId, businessOwner.businessName || 'Your Business', false, rejectDto.reviewNotes, rejectDto.rejectionReason);
+            businessOwner.vendorStatus = vendor_status_enum_1.VendorStatus.HOLD_ACCOUNT;
+            await this.businessOwnerRepository.save(businessOwner);
         }
-        return new api_response_dto_1.ApiResponseDto(200, true, 'Business rejected successfully', null);
+        const businessOwnerForNotification = await this.businessOwnerRepository.findOne({
+            where: { id: approval.businessOwnerId },
+            select: ['userId', 'businessName'],
+        });
+        if (businessOwnerForNotification) {
+            await this.notificationService.notifyBusinessOfApprovalStatus(businessOwnerForNotification.userId, businessOwnerForNotification.businessName || 'Your Business', false, rejectDto.reviewNotes, rejectDto.rejectionReason);
+        }
+        return new api_response_dto_1.ApiResponseDto(200, true, 'Business rejected successfully and vendor status set to HOLD_ACCOUNT', null);
     }
     async assignApprovalToAgent(approvalId, assignDto, adminId) {
         const approval = await this.approvalRepository.findOne({
@@ -364,6 +391,8 @@ let ApprovalService = class ApprovalService {
             upiId: approval.businessOwner?.upiId,
             creditLimit: approval.businessOwner?.creditLimit,
             vendorStatus: approval.businessOwner?.vendorStatus,
+            alternateNumber: approval.businessOwner?.alternateNumber,
+            remark: approval.businessOwner?.remark,
         };
     }
     async getBusinessApprovalStatus(businessOwnerId) {
@@ -497,11 +526,33 @@ let ApprovalService = class ApprovalService {
         await this.approvalRepository.save(approval);
         businessOwner.isApproved = true;
         businessOwner.approvedAt = new Date();
+        businessOwner.vendorStatus = vendor_status_enum_1.VendorStatus.ACTIVE;
+        console.log('Setting vendorStatus to ACTIVE for admin approved business:', businessOwnerId);
         if (approveDto.creditLimit !== undefined && approveDto.creditLimit !== null) {
             businessOwner.creditLimit = approveDto.creditLimit;
         }
-        await this.businessOwnerRepository.save(businessOwner);
-        return new api_response_dto_1.ApiResponseDto(200, true, 'Business approved successfully', null);
+        try {
+            const businessOwnerCopy = { ...businessOwner };
+            delete businessOwnerCopy.vendorStatus;
+            await this.businessOwnerRepository.save(businessOwnerCopy);
+            console.log('Business owner saved successfully without vendorStatus');
+            try {
+                await this.businessOwnerRepository.update(businessOwnerId, {
+                    vendorStatus: vendor_status_enum_1.VendorStatus.ACTIVE
+                });
+                console.log('vendorStatus updated successfully to ACTIVE');
+            }
+            catch (statusUpdateError) {
+                console.error('Failed to update vendorStatus separately:', statusUpdateError.message);
+                console.log('Business approved but vendorStatus could not be updated');
+            }
+        }
+        catch (error) {
+            console.error('Error saving business owner:', error.message);
+            throw new common_1.BadRequestException(`Failed to approve business: ${error.message}`);
+        }
+        await this.notificationService.notifyBusinessOfApprovalStatus(businessOwner.userId, businessOwner.businessName || 'Your Business', true, approveDto.reviewNotes);
+        return new api_response_dto_1.ApiResponseDto(200, true, 'Business approved successfully and vendor status set to ACTIVE', null);
     }
     async adminRejectBusiness(businessOwnerId, adminId, rejectDto) {
         const businessOwner = await this.businessOwnerRepository.findOne({
@@ -522,7 +573,10 @@ let ApprovalService = class ApprovalService {
         approval.reviewNotes = rejectDto.reviewNotes;
         approval.reviewedAt = new Date();
         await this.approvalRepository.save(approval);
-        return new api_response_dto_1.ApiResponseDto(200, true, 'Business rejected successfully', null);
+        businessOwner.vendorStatus = vendor_status_enum_1.VendorStatus.HOLD_ACCOUNT;
+        await this.businessOwnerRepository.save(businessOwner);
+        await this.notificationService.notifyBusinessOfApprovalStatus(businessOwner.userId, businessOwner.businessName || 'Your Business', false, rejectDto.reviewNotes, rejectDto.rejectionReason);
+        return new api_response_dto_1.ApiResponseDto(200, true, 'Business rejected successfully and vendor status set to HOLD_ACCOUNT', null);
     }
     createPaginationMeta(page, limit, totalItems) {
         const totalPages = Math.ceil(totalItems / limit);
@@ -634,9 +688,38 @@ let ApprovalService = class ApprovalService {
             console.log('Updated creditLimit to:', updateDto.creditLimit);
         }
         if (updateDto.vendorStatus !== undefined) {
-            businessOwner.vendorStatus = updateDto.vendorStatus;
+            console.log('Processing vendorStatus update:', updateDto.vendorStatus);
+            const statusString = String(updateDto.vendorStatus).toLowerCase().trim();
+            console.log('Normalized status string:', statusString);
+            const statusMap = {
+                'hold_account': vendor_status_enum_1.VendorStatus.HOLD_ACCOUNT,
+                'active': vendor_status_enum_1.VendorStatus.ACTIVE,
+                'inactive': vendor_status_enum_1.VendorStatus.INACTIVE,
+                'suspended': vendor_status_enum_1.VendorStatus.SUSPENDED,
+                'services_hidden': vendor_status_enum_1.VendorStatus.SERVICES_HIDDEN,
+            };
+            if (statusMap[statusString]) {
+                businessOwner.vendorStatus = statusMap[statusString];
+                console.log('vendorStatus set to:', businessOwner.vendorStatus);
+                hasChanges = true;
+                console.log('Updated vendorStatus to (enum):', businessOwner.vendorStatus);
+            }
+            else {
+                console.warn('Invalid vendorStatus value:', updateDto.vendorStatus, 'Using default ACTIVE');
+                businessOwner.vendorStatus = vendor_status_enum_1.VendorStatus.ACTIVE;
+                hasChanges = true;
+                console.log('Updated vendorStatus to default (ACTIVE):', vendor_status_enum_1.VendorStatus.ACTIVE);
+            }
+        }
+        if (updateDto.alternateNumber !== undefined) {
+            businessOwner.alternateNumber = updateDto.alternateNumber;
             hasChanges = true;
-            console.log('Updated vendorStatus to:', updateDto.vendorStatus);
+            console.log('Updated alternateNumber to:', updateDto.alternateNumber);
+        }
+        if (updateDto.remark !== undefined) {
+            businessOwner.remark = updateDto.remark;
+            hasChanges = true;
+            console.log('Updated remark to:', updateDto.remark);
         }
         if (updateDto.businessOwner) {
             const ownerData = updateDto.businessOwner;
@@ -671,9 +754,39 @@ let ApprovalService = class ApprovalService {
                 console.log('Updated creditLimit (nested) to:', ownerData.creditLimit);
             }
             if (ownerData.vendorStatus !== undefined) {
-                businessOwner.vendorStatus = ownerData.vendorStatus;
+                console.log('vendorStatus input (nested):', ownerData.vendorStatus, 'type:', typeof ownerData.vendorStatus);
+                console.log('Available VendorStatus values (nested):', Object.values(vendor_status_enum_1.VendorStatus));
+                if (typeof ownerData.vendorStatus === 'string') {
+                    const statusValue = Object.values(vendor_status_enum_1.VendorStatus).find(status => status.toLowerCase() === ownerData.vendorStatus.toLowerCase());
+                    console.log('Found statusValue (nested):', statusValue);
+                    if (statusValue) {
+                        businessOwner.vendorStatus = statusValue;
+                        hasChanges = true;
+                        console.log('Updated vendorStatus (nested) to:', statusValue);
+                    }
+                    else {
+                        console.warn('Invalid vendorStatus value (nested):', ownerData.vendorStatus);
+                        console.log('Using default vendorStatus (nested): ACTIVE');
+                        businessOwner.vendorStatus = vendor_status_enum_1.VendorStatus.ACTIVE;
+                        hasChanges = true;
+                        console.log('Updated vendorStatus (nested) to default (ACTIVE):', vendor_status_enum_1.VendorStatus.ACTIVE);
+                    }
+                }
+                else {
+                    businessOwner.vendorStatus = ownerData.vendorStatus;
+                    hasChanges = true;
+                    console.log('Updated vendorStatus (nested) to (enum):', ownerData.vendorStatus);
+                }
+            }
+            if (ownerData.alternateNumber !== undefined) {
+                businessOwner.alternateNumber = ownerData.alternateNumber;
                 hasChanges = true;
-                console.log('Updated vendorStatus (nested) to:', ownerData.vendorStatus);
+                console.log('Updated alternateNumber (nested) to:', ownerData.alternateNumber);
+            }
+            if (ownerData.remark !== undefined) {
+                businessOwner.remark = ownerData.remark;
+                hasChanges = true;
+                console.log('Updated remark (nested) to:', ownerData.remark);
             }
         }
         if (updateDto.streetAddress || updateDto.city || updateDto.state || updateDto.pincode || updateDto.address) {
@@ -879,8 +992,112 @@ let ApprovalService = class ApprovalService {
         }
         if (hasChanges) {
             console.log('Saving business owner...');
-            await this.businessOwnerRepository.save(businessOwner);
-            console.log('Business owner saved successfully');
+            console.log('Final vendorStatus value before save:', businessOwner.vendorStatus, 'type:', typeof businessOwner.vendorStatus);
+            const hasVendorStatusChange = updateDto.vendorStatus !== undefined || (updateDto.businessOwner && updateDto.businessOwner.vendorStatus !== undefined);
+            const vendorStatusValue = businessOwner.vendorStatus;
+            try {
+                if (hasVendorStatusChange) {
+                    console.log('vendorStatus was changed, saving without it first...');
+                    const businessOwnerCopy = { ...businessOwner };
+                    delete businessOwnerCopy.vendorStatus;
+                    await this.businessOwnerRepository.save(businessOwnerCopy);
+                    console.log('Business owner saved successfully without vendorStatus');
+                    try {
+                        console.log('Updating vendorStatus separately...');
+                        console.log('vendorStatus value to update:', vendorStatusValue, 'type:', typeof vendorStatusValue);
+                        let vendorStatusUpdated = false;
+                        try {
+                            await this.businessOwnerRepository.update(businessOwnerId, {
+                                vendorStatus: vendorStatusValue
+                            });
+                            console.log('vendorStatus updated successfully with standard update');
+                            vendorStatusUpdated = true;
+                        }
+                        catch (updateError1) {
+                            console.error('Standard update failed:', updateError1.message);
+                            try {
+                                await this.businessOwnerRepository
+                                    .createQueryBuilder()
+                                    .update(entities_1.BusinessOwner)
+                                    .set({ vendorStatus: vendorStatusValue })
+                                    .where('id = :id', { id: businessOwnerId })
+                                    .execute();
+                                console.log('vendorStatus updated successfully with QueryBuilder');
+                                vendorStatusUpdated = true;
+                            }
+                            catch (updateError2) {
+                                console.error('QueryBuilder update failed:', updateError2.message);
+                                try {
+                                    const result = await this.businessOwnerRepository.query(`UPDATE business_owner SET vendor_status = $1 WHERE id = $2`, [vendorStatusValue, businessOwnerId]);
+                                    console.log('Raw SQL update result:', result);
+                                    vendorStatusUpdated = true;
+                                }
+                                catch (updateError3) {
+                                    console.error('Raw SQL update failed:', updateError3.message);
+                                    try {
+                                        await this.businessOwnerRepository
+                                            .createQueryBuilder()
+                                            .update(entities_1.BusinessOwner)
+                                            .set({ vendorStatus: vendor_status_enum_1.VendorStatus.ACTIVE })
+                                            .where('id = :id', { id: businessOwnerId })
+                                            .execute();
+                                        console.log('vendorStatus updated to ACTIVE as fallback');
+                                        vendorStatusUpdated = true;
+                                    }
+                                    catch (updateError4) {
+                                        console.error('Fallback to ACTIVE failed:', updateError4.message);
+                                        console.log('Could not update vendorStatus, but business owner was saved');
+                                    }
+                                }
+                            }
+                        }
+                        if (vendorStatusUpdated) {
+                            const updatedBusinessOwner = await this.businessOwnerRepository.findOne({
+                                where: { id: businessOwnerId }
+                            });
+                            if (updatedBusinessOwner) {
+                                Object.assign(businessOwner, updatedBusinessOwner);
+                                console.log('Business owner refreshed with updated vendorStatus');
+                            }
+                        }
+                    }
+                    catch (separateUpdateError) {
+                        console.error('Failed to update vendorStatus separately:', separateUpdateError.message);
+                        console.log('Business owner saved but vendorStatus could not be updated');
+                    }
+                }
+                else {
+                    await this.businessOwnerRepository.save(businessOwner);
+                    console.log('Business owner saved successfully (no vendorStatus change)');
+                }
+            }
+            catch (error) {
+                console.error('Error in save process:', error.message);
+                try {
+                    console.log('Final fallback: saving without vendorStatus field...');
+                    const businessOwnerCopy = { ...businessOwner };
+                    delete businessOwnerCopy.vendorStatus;
+                    await this.businessOwnerRepository.save(businessOwnerCopy);
+                    console.log('Business owner saved successfully in final fallback');
+                    try {
+                        await this.businessOwnerRepository
+                            .createQueryBuilder()
+                            .update(entities_1.BusinessOwner)
+                            .set({ vendorStatus: vendor_status_enum_1.VendorStatus.ACTIVE })
+                            .where('id = :id', { id: businessOwnerId })
+                            .execute();
+                        console.log('vendorStatus set to ACTIVE in final fallback');
+                    }
+                    catch (finalError) {
+                        console.error('Final vendorStatus update failed:', finalError.message);
+                        console.log('Business owner saved but vendorStatus remains unchanged');
+                    }
+                }
+                catch (finalFallbackError) {
+                    console.error('Final fallback failed:', finalFallbackError.message);
+                    throw new common_1.BadRequestException(`Failed to update business: ${finalFallbackError.message}`);
+                }
+            }
         }
         else {
             console.log('No changes to save');
@@ -953,6 +1170,8 @@ let ApprovalService = class ApprovalService {
                 upiId: approval.upiId || businessOwner.upiId,
                 creditLimit: approval.creditLimit || businessOwner.creditLimit,
                 vendorStatus: approval.vendorStatus || businessOwner.vendorStatus,
+                alternateNumber: businessOwner.alternateNumber,
+                remark: businessOwner.remark,
             },
             business: {
                 id: businessOwner.id,
@@ -1046,6 +1265,8 @@ let ApprovalService = class ApprovalService {
                 upiId: businessOwner.upiId,
                 creditLimit: businessOwner.creditLimit,
                 vendorStatus: businessOwner.vendorStatus,
+                alternateNumber: businessOwner.alternateNumber,
+                remark: businessOwner.remark,
             },
             business: {
                 id: businessOwner.id,

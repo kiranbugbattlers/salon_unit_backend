@@ -1,5 +1,5 @@
 import { Repository } from 'typeorm';
-import { BusinessOwner, BusinessOwnerOnboarding, BusinessAddress, BusinessMedia, BusinessOperatingHours, BusinessService, ServicePackage, ServicePackageItem, Service, User, Customer, BankingInfo, BusinessSettings, Review, BusinessDocument } from '../database/entities';
+import { BusinessOwner, BusinessOwnerOnboarding, BusinessAddress, BusinessMedia, BusinessOperatingHours, BusinessService, ServicePackage, ServicePackageItem, Service, User, Customer, BankingInfo, BusinessSettings, Review, BusinessDocument, BusinessApproval } from '../database/entities';
 import { BusinessOwnerOnboardingStep1Dto, BusinessOwnerOnboardingStep2Dto, BusinessOwnerOnboardingStep3Dto, BusinessOwnerOnboardingStep4Dto, BusinessOwnerOnboardingStepResponseDto, BusinessOwnerOnboardingCompletionResponseDto, BusinessOwnerOnboardingStatusResponseDto, BusinessOwnerProfileResponseDto, BusinessOwnerProfileUpdateDto, BusinessInfoResponseDto, UpdateBusinessInfoDto, BusinessServicesResponseDto, UpdateBusinessServicesDto, BusinessMediaUploadResponseDto, BusinessMediaListResponseDto, BusinessMediaDeleteResponseDto, BusinessOwnerServicesGroupedByCategoryResponseDto, CreateServicePackageDto, UpdateServicePackageDto, ServicePackageResponseDto, ServicePackageListResponseDto, ServicePackageResponseWrapperDto, ServicePackageDeleteResponseDto, DeleteBusinessServicesDto, DeleteBusinessServicesResponseDto, UpdateDeliverySettingsDto, BusinessDocumentResponseDto, BusinessDocumentListResponseDto } from './dto';
 import { MediaType } from '../common/enums';
 import { DocumentType } from '../common/enums/business-document.enum';
@@ -23,9 +23,10 @@ export declare class BusinessOwnerService {
     private businessSettingsRepository;
     private reviewRepository;
     private businessDocumentRepository;
+    private businessApprovalRepository;
     private approvalService;
     private readonly s3Service;
-    constructor(businessOwnerRepository: Repository<BusinessOwner>, onboardingRepository: Repository<BusinessOwnerOnboarding>, addressRepository: Repository<BusinessAddress>, mediaRepository: Repository<BusinessMedia>, businessOperatingHoursRepository: Repository<BusinessOperatingHours>, businessServiceRepository: Repository<BusinessService>, servicePackageRepository: Repository<ServicePackage>, servicePackageItemRepository: Repository<ServicePackageItem>, serviceRepository: Repository<Service>, serviceCategoryRepository: Repository<ServiceCategory>, userRepository: Repository<User>, customerRepository: Repository<Customer>, bankingInfoRepository: Repository<BankingInfo>, businessSettingsRepository: Repository<BusinessSettings>, reviewRepository: Repository<Review>, businessDocumentRepository: Repository<BusinessDocument>, approvalService: ApprovalService, s3Service: S3Service);
+    constructor(businessOwnerRepository: Repository<BusinessOwner>, onboardingRepository: Repository<BusinessOwnerOnboarding>, addressRepository: Repository<BusinessAddress>, mediaRepository: Repository<BusinessMedia>, businessOperatingHoursRepository: Repository<BusinessOperatingHours>, businessServiceRepository: Repository<BusinessService>, servicePackageRepository: Repository<ServicePackage>, servicePackageItemRepository: Repository<ServicePackageItem>, serviceRepository: Repository<Service>, serviceCategoryRepository: Repository<ServiceCategory>, userRepository: Repository<User>, customerRepository: Repository<Customer>, bankingInfoRepository: Repository<BankingInfo>, businessSettingsRepository: Repository<BusinessSettings>, reviewRepository: Repository<Review>, businessDocumentRepository: Repository<BusinessDocument>, businessApprovalRepository: Repository<BusinessApproval>, approvalService: ApprovalService, s3Service: S3Service);
     private generateUniqueShopId;
     populateShopIds(): Promise<void>;
     getBusinessOwnerProfile(userId: string): Promise<BusinessOwnerProfileResponseDto>;
@@ -65,7 +66,8 @@ export declare class BusinessOwnerService {
     updateDeliverySettings(businessOwnerId: string, updateDto: UpdateDeliverySettingsDto): Promise<BusinessSettings>;
     private calculateBusinessRating;
     getBusinessDocuments(userId: string): Promise<BusinessDocumentListResponseDto>;
-    uploadBusinessDocument(userId: string, documentType: DocumentType, file: any): Promise<BusinessDocumentResponseDto>;
+    uploadBusinessDocumentForApproval(userId: string, file: Express.Multer.File): Promise<BusinessDocumentResponseDto>;
+    uploadBusinessDocument(userId: string, documentType: DocumentType, file: Express.Multer.File): Promise<BusinessDocumentResponseDto>;
     getBusinessMediaById(userId: string, mediaId: string): Promise<BusinessMediaListResponseDto>;
     updateBusinessMedia(userId: string, mediaId: string, updateData: any): Promise<BusinessMediaListResponseDto>;
 }

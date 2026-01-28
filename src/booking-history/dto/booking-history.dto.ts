@@ -74,6 +74,27 @@ export class BookingHistoryListDto {
 
 export class BookingHistoryQueryDto {
   @ApiProperty({
+    description: 'Filter by customer ID (UUID) - Admin only',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    required: false
+  })
+  customerId?: string;
+
+  @ApiProperty({
+    description: 'Filter by business owner ID (UUID) - Admin only',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    required: false
+  })
+  businessOwnerId?: string;
+
+  @ApiProperty({
+    description: 'Filter by booking status',
+    enum: ['pending', 'confirmed', 'in-progress', 'completed', 'cancelled'],
+    required: false
+  })
+  status?: string;
+
+  @ApiProperty({
     description: 'Filter by specific appointment date (YYYY-MM-DD)',
     example: '2024-01-15',
     required: false
@@ -124,7 +145,7 @@ export class BookingHistoryQueryDto {
 
   @ApiProperty({
     description: 'Sort field',
-    enum: ['bookingDateTime', 'bookingAmount'],
+    enum: ['bookingDateTime', 'bookingAmount', 'createdAt', 'totalAmount'],
     example: 'bookingDateTime',
     required: false
   })
