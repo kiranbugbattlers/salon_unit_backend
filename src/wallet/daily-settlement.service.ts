@@ -53,7 +53,7 @@ export class DailySettlementService {
 
     return {
       commissionPercent: config ? Number(config.businessOwnerCommissionPercent) : this.DEFAULT_COMMISSION_PERCENT,
-      gstPercent: this.DEFAULT_GST_PERCENT, // GST is currently not in config, keeping default
+      gstPercent: config ? Number(config.gstPercent) : this.DEFAULT_GST_PERCENT, // Use GST from config
     };
   }
 

@@ -70,6 +70,7 @@ import {
 import { MediaType, AddressType } from '../common/enums';
 import { ApprovalStatus } from '../common/enums';
 import { DocumentType, DocumentStatus } from '../common/enums/business-document.enum';
+import { SubscriptionStatus } from '../common/enums/subscription-status.enum';
 import { ServiceCategory } from '../database/entities';
 import { generateShopId } from '../common/utils/shop-id.util';
 import { ApprovalService } from '../approval/approval.service';
@@ -601,18 +602,13 @@ export class BusinessOwnerService {
       console.error('Failed to save banking information:', error.message);
     }
 
-    // Trigger approval process after successful onboarding
-    try {
-      await this.approvalService.createApprovalRequest(businessOwner.id);
-    } catch (error) {
-      // Log error but don't fail the onboarding process
-      console.error('Failed to create approval request:', error.message);
-    }
+    // Onboarding completion - user should now upload documents
+    // No automatic approval request created - user needs to upload documents first
 
     return new BusinessOwnerOnboardingCompletionResponseDto(
       200,
       true,
-      'Business owner onboarding completed successfully! Your business registration is now being reviewed by our team. You will be notified once approved.',
+      'Business owner onboarding completed successfully! Please upload your business documents to proceed with verification.',
       { completed: true }
     );
   }
@@ -1920,6 +1916,7 @@ export class BusinessOwnerService {
   async uploadBusinessDocumentForApproval(
     userId: string,
     file: Express.Multer.File,
+    documentType?: string,
   ): Promise<BusinessDocumentResponseDto> {
     console.log('Service received file:', file);
     console.log('File details:', {
@@ -1947,43 +1944,129 @@ export class BusinessOwnerService {
 
     const result: UploadResult = await this.s3Service.uploadFile(file, uploadOptions);
 
-    // Determine document type based on file content or name
-    let documentType = DocumentType.OTHER;
-    const fileName = file.originalname.toLowerCase();
+    // Determine document type - use provided type first, then fallback to filename detection
+    let docType = DocumentType.OTHER;
     
-    if (fileName.includes('aadhar') || fileName.includes('aadhaar')) {
-      documentType = DocumentType.AADHAR;
-    } else if (fileName.includes('pan')) {
-      documentType = DocumentType.PAN;
-    } else if (fileName.includes('gst')) {
-      documentType = DocumentType.GST_CERTIFICATE;
-    } else if (fileName.includes('shop') || fileName.includes('trade')) {
-      documentType = DocumentType.TRADE_LICENSE;
-    } else if (fileName.includes('fssai')) {
-      documentType = DocumentType.FSSAI_LICENSE;
-    } else if (fileName.includes('msme') || fileName.includes('udyam')) {
-      documentType = DocumentType.MSME_REGISTRATION;
-    } else if (fileName.includes('bank') || fileName.includes('statement')) {
-      documentType = DocumentType.BANK_STATEMENT;
-    } else if (fileName.includes('cheque')) {
-      documentType = DocumentType.CANCELLED_CHEQUE;
-    } else if (fileName.includes('electricity') || fileName.includes('bill')) {
-      documentType = DocumentType.ELECTRICITY_BILL;
-    } else if (fileName.includes('rent') || fileName.includes('agreement')) {
-      documentType = DocumentType.RENT_AGREEMENT;
-    } else if (fileName.includes('photo') || fileName.includes('shop')) {
-      documentType = DocumentType.SHOP_PHOTO;
-    } else if (fileName.includes('signature')) {
-      documentType = DocumentType.SIGNATURE;
-    } else if (fileName.includes('id') || fileName.includes('proof')) {
-      documentType = DocumentType.ID_PROOF;
-    } else if (fileName.includes('address')) {
-      documentType = DocumentType.ADDRESS_PROOF;
+    if (documentType) {
+      // Map string to DocumentType enum
+      const normalizedType = documentType.toLowerCase().replace(/[-\s]/g, '_');
+      switch (normalizedType) {
+        case 'aadhar':
+        case 'aadhaar':
+          docType = DocumentType.AADHAR;
+          break;
+        case 'pan':
+          docType = DocumentType.PAN;
+          break;
+        case 'gst':
+        case 'gst_certificate':
+          docType = DocumentType.GST_CERTIFICATE;
+          break;
+        case 'udyam':
+        case 'udyam_aadhaar':
+          docType = DocumentType.UDYAM_AADHAAR;
+          break;
+        case 'shop':
+        case 'trade':
+        case 'trade_license':
+          docType = DocumentType.TRADE_LICENSE;
+          break;
+        case 'shop_act':
+          docType = DocumentType.SHOP_ACT;
+          break;
+        case 'fssai':
+        case 'fssai_license':
+          docType = DocumentType.FSSAI_LICENSE;
+          break;
+        case 'msme':
+        case 'udyam':
+        case 'msme_registration':
+          docType = DocumentType.MSME_REGISTRATION;
+          break;
+        case 'bank':
+        case 'statement':
+        case 'bank_statement':
+          docType = DocumentType.BANK_STATEMENT;
+          break;
+        case 'cheque':
+        case 'cancelled_cheque':
+          docType = DocumentType.CANCELLED_CHEQUE;
+          break;
+        case 'electricity':
+        case 'bill':
+        case 'electricity_bill':
+          docType = DocumentType.ELECTRICITY_BILL;
+          break;
+        case 'rent':
+        case 'agreement':
+        case 'rent_agreement':
+          docType = DocumentType.RENT_AGREEMENT;
+          break;
+        case 'photograph':
+        case 'photo':
+          docType = DocumentType.PHOTOGRAPH;
+          break;
+        case 'passport_photo':
+          docType = DocumentType.PASSPORT_PHOTO;
+          break;
+        case 'business_license':
+          docType = DocumentType.BUSINESS_LICENSE;
+          break;
+        case 'signature':
+          docType = DocumentType.SIGNATURE;
+          break;
+        case 'id':
+        case 'proof':
+        case 'id_proof':
+          docType = DocumentType.ID_PROOF;
+          break;
+        case 'address':
+        case 'address_proof':
+          docType = DocumentType.ADDRESS_PROOF;
+          break;
+        default:
+          docType = DocumentType.OTHER;
+      }
+    } else {
+      // Fallback to filename detection
+      const fileName = file.originalname.toLowerCase();
+      if (fileName.includes('aadhar') || fileName.includes('aadhaar')) {
+        docType = DocumentType.AADHAR;
+      } else if (fileName.includes('pan')) {
+        docType = DocumentType.PAN;
+      } else if (fileName.includes('gst')) {
+        docType = DocumentType.GST_CERTIFICATE;
+      } else if (fileName.includes('shop') || fileName.includes('trade')) {
+        docType = DocumentType.TRADE_LICENSE;
+      } else if (fileName.includes('fssai')) {
+        docType = DocumentType.FSSAI_LICENSE;
+      } else if (fileName.includes('msme') || fileName.includes('udyam')) {
+        docType = DocumentType.MSME_REGISTRATION;
+      } else if (fileName.includes('bank') || fileName.includes('statement')) {
+        docType = DocumentType.BANK_STATEMENT;
+      } else if (fileName.includes('cheque')) {
+        docType = DocumentType.CANCELLED_CHEQUE;
+      } else if (fileName.includes('electricity') || fileName.includes('bill')) {
+        docType = DocumentType.ELECTRICITY_BILL;
+      } else if (fileName.includes('rent') || fileName.includes('agreement')) {
+        docType = DocumentType.RENT_AGREEMENT;
+      } else if (fileName.includes('photo') || fileName.includes('shop')) {
+        docType = DocumentType.SHOP_PHOTO;
+      } else if (fileName.includes('signature')) {
+        docType = DocumentType.SIGNATURE;
+      } else if (fileName.includes('id') || fileName.includes('proof')) {
+        docType = DocumentType.ID_PROOF;
+      } else if (fileName.includes('address')) {
+        docType = DocumentType.ADDRESS_PROOF;
+      }
     }
+
+    console.log('Provided documentType:', documentType);
+    console.log('Detected docType:', docType);
 
     // Check if document of this type already exists
     let document = await this.businessDocumentRepository.findOne({
-      where: { businessOwnerId: businessOwner.id, documentType },
+      where: { businessOwnerId: businessOwner.id, documentType: docType },
     });
 
     if (document) {
@@ -1994,7 +2077,7 @@ export class BusinessOwnerService {
     } else {
       document = this.businessDocumentRepository.create({
         businessOwnerId: businessOwner.id,
-        documentType,
+        documentType: docType,
         documentUrl: result.url,
         status: DocumentStatus.PENDING,
       });
@@ -2155,5 +2238,126 @@ export class BusinessOwnerService {
     };
 
     return new BusinessMediaListResponseDto(200, true, 'Business media updated successfully', responseData);
+  }
+
+  /**
+   * Check if all required documents are uploaded and create approval request
+   */
+  async checkDocumentsAndCreateApprovalRequest(userId: string): Promise<any> {
+    const businessOwner = await this.businessOwnerRepository.findOne({
+      where: { userId },
+      relations: ['documents'],
+    });
+
+    if (!businessOwner) {
+      throw new NotFoundException('Business owner not found');
+    }
+
+    // Check if onboarding is completed
+    if (!businessOwner.onboarding?.isCompleted) {
+      throw new BadRequestException('Please complete onboarding first');
+    }
+
+    // Check if all required documents are uploaded
+    const requiredDocuments = [DocumentType.PAN, DocumentType.AADHAR, DocumentType.BUSINESS_LICENSE];
+    const uploadedDocuments = businessOwner.documents || [];
+    
+    const uploadedTypes = uploadedDocuments.map(doc => doc.documentType);
+    const missingDocuments = requiredDocuments.filter(type => !uploadedTypes.includes(type));
+
+    if (missingDocuments.length > 0) {
+      throw new BadRequestException(`Please upload all required documents: ${missingDocuments.join(', ')}`);
+    }
+
+    // Check if approval request already exists
+    const existingApproval = await this.businessApprovalRepository.findOne({
+      where: { businessOwnerId: businessOwner.id },
+    });
+
+    if (existingApproval) {
+      throw new BadRequestException('Approval request already exists');
+    }
+
+    // Create approval request
+    try {
+      await this.approvalService.createApprovalRequest(businessOwner.id);
+      return {
+        success: true,
+        message: 'Approval request created successfully. Your business is now under review.',
+      };
+    } catch (error) {
+      console.error('Failed to create approval request:', error.message);
+      throw new BadRequestException('Failed to create approval request');
+    }
+  }
+
+  /**
+   * Get business flow status - shows current step in the process
+   */
+  async getBusinessFlowStatus(userId: string): Promise<any> {
+    const businessOwner = await this.businessOwnerRepository.findOne({
+      where: { userId },
+      relations: ['documents', 'businessSubscription'],
+    });
+
+    if (!businessOwner) {
+      throw new NotFoundException('Business owner not found');
+    }
+
+    // Check onboarding status
+    const isOnboardingCompleted = businessOwner.onboarding?.isCompleted || false;
+
+    // Check documents status
+    const requiredDocuments = [DocumentType.PAN, DocumentType.AADHAR, DocumentType.BUSINESS_LICENSE];
+    const uploadedDocuments = businessOwner.documents || [];
+    const uploadedTypes = uploadedDocuments.map(doc => doc.documentType);
+    const allDocumentsUploaded = requiredDocuments.every(type => uploadedTypes.includes(type));
+
+    // Check approval status
+    const approval = await this.businessApprovalRepository.findOne({
+      where: { businessOwnerId: businessOwner.id },
+    });
+
+    const isApproved = businessOwner.isApproved || false;
+
+    // Check subscription status
+    const businessSubscriptions = businessOwner.businessSubscriptions || [];
+    const activeSubscription = businessSubscriptions.find(sub => sub.status === SubscriptionStatus.ACTIVE);
+    const hasSubscription = !!activeSubscription;
+
+    // Determine current step
+    let currentStep = 'onboarding';
+    let nextStep = 'complete_onboarding';
+    
+    if (isOnboardingCompleted) {
+      currentStep = 'documents';
+      nextStep = allDocumentsUploaded ? 'create_approval' : 'upload_documents';
+    }
+    
+    if (isOnboardingCompleted && allDocumentsUploaded) {
+      currentStep = 'approval';
+      nextStep = isApproved ? 'subscribe' : 'wait_for_approval';
+    }
+    
+    if (isOnboardingCompleted && allDocumentsUploaded && isApproved) {
+      currentStep = 'subscription';
+      nextStep = hasSubscription ? 'dashboard' : 'subscribe';
+    }
+    
+    if (isOnboardingCompleted && allDocumentsUploaded && isApproved && hasSubscription) {
+      currentStep = 'dashboard';
+      nextStep = null;
+    }
+
+    return {
+      currentStep,
+      nextStep,
+      isOnboardingCompleted,
+      allDocumentsUploaded,
+      isApproved,
+      hasSubscription,
+      approvalStatus: approval?.status,
+      canAccessDashboard: isOnboardingCompleted && allDocumentsUploaded && isApproved && hasSubscription,
+    };
   }
 }

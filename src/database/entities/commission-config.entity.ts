@@ -29,15 +29,15 @@ export class CommissionConfig {
   })
   businessOwnerCommissionPercent: number;
 
-  @ApiProperty({ description: 'Reward percentage given to customer (0-100)' })
+  @ApiProperty({ description: 'GST percentage (0-100)' })
   @Column({
-    name: 'customer_reward_percent',
+    name: 'gst_percent',
     type: 'decimal',
     precision: 5,
     scale: 2,
     default: 0,
   })
-  customerRewardPercent: number;
+  gstPercent: number;
 
   @ApiProperty({ description: 'Whether this configuration is active' })
   @Column({ name: 'is_active', default: true })

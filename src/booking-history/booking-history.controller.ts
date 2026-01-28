@@ -5,6 +5,8 @@ import {
   Query,
   UseGuards,
   ParseUUIDPipe,
+  ForbiddenException,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -459,5 +461,141 @@ export class BookingHistoryController {
     };
     
     return this.bookingHistoryService.findAll(customerId, bookingQuery);
+  }
+
+  @Get('user/:userId')
+  @ApiBearerAuth('JWT')
+  @ApiOperation({
+    summary: 'Get booking history by user ID',
+    description: `
+      Retrieve booking history for a specific user by mapping user ID to customer ID.
+      
+      Features:
+      - Maps user ID to customer ID automatically
+      - Paginated results with configurable page size
+      - Filter by booking status (pending, confirmed, in-progress, completed, cancelled)
+      - Filter by specific appointment date
+      - Filter by date range (from/to dates)
+      - Sort by appointment date, creation date, or amount
+      - Includes full booking details with related entities
+      
+      Security:
+      - JWT authentication required
+      - Users can only view their own booking history unless admin
+      - Maps user table to customer table to get booking history
+      
+      Use Cases:
+      - Get booking history for a specific user ID
+      - Admin viewing user booking history
+      - Cross-service integration using user ID
+    `,
+  })
+  @ApiParam({
+    name: 'userId',
+    description: 'User ID (UUID) from users table',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiQuery({
+    name: 'status',
+    description: 'Filter by booking status',
+    enum: ['pending', 'confirmed', 'in-progress', 'completed', 'cancelled'],
+    required: false,
+  })
+  @ApiQuery({
+    name: 'date',
+    description: 'Filter by specific appointment date (YYYY-MM-DD)',
+    example: '2024-01-15',
+    required: false,
+  })
+  @ApiQuery({
+    name: 'appointmentDate',
+    description: 'Filter by specific appointment date (YYYY-MM-DD)',
+    example: '2024-01-15',
+    required: false,
+  })
+  @ApiQuery({
+    name: 'fromDate',
+    description: 'Filter bookings from this date onwards (YYYY-MM-DD)',
+    example: '2024-01-01',
+    required: false,
+  })
+  @ApiQuery({
+    name: 'toDate',
+    description: 'Filter bookings up to this date (YYYY-MM-DD)',
+    example: '2024-01-31',
+    required: false,
+  })
+  @ApiQuery({
+    name: 'page',
+    description: 'Page number for pagination',
+    example: 1,
+    required: false,
+  })
+  @ApiQuery({
+    name: 'limit',
+    description: 'Number of items per page',
+    example: 10,
+    required: false,
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    description: 'Sort field',
+    enum: ['appointmentDate', 'createdAt', 'totalAmount'],
+    example: 'appointmentDate',
+    required: false,
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    description: 'Sort order',
+    enum: ['ASC', 'DESC'],
+    example: 'DESC',
+    required: false,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User booking history retrieved successfully',
+    type: BookingHistoryListDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - JWT token required',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Can only view own booking history',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User or customer not found',
+  })
+  async getBookingHistoryByUserId(
+    @CurrentUser() user: CurrentUserData,
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Query() query: any,
+  ): Promise<BookingHistoryListDto> {
+    // Security check: only allow users to view their own history unless admin
+    if (userId !== user.userId && !user.roles.includes(UserRole.ADMIN)) {
+      throw new ForbiddenException('You can only view your own booking history');
+    }
+
+    // Map user ID to customer ID
+    const customer = await this.bookingHistoryService.findCustomerByUserId(userId);
+    if (!customer) {
+      throw new NotFoundException('Customer not found for this user');
+    }
+
+    const bookingQuery: BookingHistoryQueryDto = {
+      date: query.date,
+      appointmentDate: query.appointmentDate,
+      paymentMethod: query.paymentMethod,
+      fromDate: query.fromDate,
+      toDate: query.toDate,
+      page: query.page ? parseInt(query.page) : 1,
+      limit: query.limit ? parseInt(query.limit) : 10,
+      sortBy: query.sortBy || 'bookingDateTime',
+      sortOrder: query.sortOrder || 'DESC',
+    };
+    
+    return this.bookingHistoryService.findAll(customer.id, bookingQuery);
   }
 }

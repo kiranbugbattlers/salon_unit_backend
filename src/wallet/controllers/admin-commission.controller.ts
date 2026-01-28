@@ -57,11 +57,11 @@ export class AdminCommissionController {
   @ApiOperation({
     summary: 'Create/Update commission configuration',
     description: `
-      Set commission rates for business owners and reward rates for customers.
+      Set commission rates for business owners and GST rates.
 
       Features:
       - Set business owner commission percentage (0-100%)
-      - Set customer reward percentage (0-100%)
+      - Set GST percentage (0-100%)
       - Specify effective date
       - Previous configs automatically deactivated
       - Full history preserved
@@ -70,7 +70,7 @@ export class AdminCommissionController {
 
       Example:
       - Business owner commission: 2% (company takes 2% from business owner)
-      - Customer reward: 1% (customer gets 1% back as reward points)
+      - GST: 18% (GST applied on services)
     `,
   })
   @ApiBody({ type: CreateCommissionConfigDto })
@@ -91,7 +91,7 @@ export class AdminCommissionController {
 
     const config = await this.commissionService.createCommissionConfig(
       createDto.businessOwnerCommissionPercent,
-      createDto.customerRewardPercent,
+      createDto.gstPercent,
       effectiveFrom,
       adminId,
       createDto.notes,
@@ -102,6 +102,53 @@ export class AdminCommissionController {
       success: true,
       message: 'Commission configuration created successfully',
       data: config,
+    };
+  }
+
+  @Get('config')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Get all commission configurations',
+    description: 'Retrieve all commission configurations (both active and inactive).',
+  })
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 20 })
+  @ApiQuery({ name: 'isActive', required: false, description: 'Filter by active status' })
+  @ApiResponse({
+    status: 200,
+    description: 'All commission configurations retrieved',
+  })
+  async getAllCommissionConfigs(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('isActive') isActive?: boolean,
+  ): Promise<any> {
+    const pageNum = page ? parseInt(String(page)) : 1;
+    const limitNum = limit ? parseInt(String(limit)) : 20;
+    const skip = (pageNum - 1) * limitNum;
+
+    const where: any = {};
+    if (isActive !== undefined) {
+      where.isActive = isActive;
+    }
+
+    const [configs, total] = await this.commissionService.getAllCommissionConfigs(
+      pageNum,
+      limitNum,
+      where
+    );
+
+    return {
+      code: 200,
+      success: true,
+      message: 'All commission configurations retrieved',
+      data: {
+        configs,
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+      },
     };
   }
 

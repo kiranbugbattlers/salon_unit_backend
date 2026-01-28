@@ -32,6 +32,8 @@ import {
   AdminBookingRequestListResponseDto,
   AdminBookingResponseDto,
   AdminBookingRequestResponseDto,
+  AdminAnalyticsQueryDto,
+  BookingAnalyticsDto,
   ForceCancelBookingDto,
   ForceCompleteBookingDto,
 } from '../dto/admin-booking.dto';
@@ -192,7 +194,61 @@ export class AdminBookingController {
     };
   }
 
-  // ==================== Endpoint 3: Get Booking Details ====================
+  // ==================== Endpoint 3a: Get Booking Analytics ====================
+  @Get('analytics')
+  @ApiOperation({
+    summary: 'Get booking analytics (Admin only)',
+    description: `
+      Retrieve comprehensive booking analytics and statistics.
+
+      Features:
+      - Filter by date range
+      - Filter by business owner
+      - Booking volume trends
+      - Revenue analytics
+      - Service performance metrics
+      - Customer and business insights
+
+      Use Cases:
+      - Business intelligence and reporting
+      - Performance monitoring
+      - Revenue tracking
+      - Service optimization
+      - Strategic decision making
+
+      Security:
+      - Admin-only access
+      - Contains sensitive business data
+    `,
+  })
+  @ApiQuery({ name: 'dateFrom', description: 'Start date for analytics (YYYY-MM-DD)', required: false })
+  @ApiQuery({ name: 'dateTo', description: 'End date for analytics (YYYY-MM-DD)', required: false })
+  @ApiQuery({ name: 'businessOwnerId', description: 'Filter by specific business owner', required: false })
+  @ApiResponse({
+    status: 200,
+    description: 'Analytics retrieved successfully',
+    type: 'object',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - JWT token required',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Admin role required',
+  })
+  async getBookingAnalytics(@Query() query: any): Promise<any> {
+    const analytics = await this.adminBookingService.getBookingAnalytics(query);
+
+    return {
+      code: 200,
+      success: true,
+      message: 'Analytics retrieved successfully',
+      data: analytics,
+    };
+  }
+
+  // ==================== Endpoint 3b: Get Booking Details ====================
   @Get(':id')
   @ApiOperation({
     summary: 'Get booking details (Admin only)',

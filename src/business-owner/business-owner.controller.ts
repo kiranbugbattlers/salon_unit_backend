@@ -983,6 +983,38 @@ export class BusinessOwnerController {
     return this.businessOwnerService.getBusinessDocuments(req.user.userId);
   }
 
+  @Post('documents/create-approval-request')
+  @ApiBearerAuth('JWT')
+  @ApiOperation({
+    summary: 'Create approval request after document upload',
+    description: 'Creates an approval request after all required documents have been uploaded',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Approval request created successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - missing documents or approval already exists',
+  })
+  async createApprovalRequest(@Req() req: any): Promise<any> {
+    return this.businessOwnerService.checkDocumentsAndCreateApprovalRequest(req.user.userId);
+  }
+
+  @Get('flow-status')
+  @ApiBearerAuth('JWT')
+  @ApiOperation({
+    summary: 'Get business flow status',
+    description: 'Get current status of business onboarding, documents, approval, and subscription flow',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Flow status retrieved successfully',
+  })
+  async getBusinessFlowStatus(@Req() req: any): Promise<any> {
+    return this.businessOwnerService.getBusinessFlowStatus(req.user.userId);
+  }
+
   @Post('documents')
   @ApiBearerAuth('JWT')
   @ApiOperation({
@@ -991,7 +1023,7 @@ export class BusinessOwnerController {
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
-    description: 'Document file',
+    description: 'Document file with document type',
     schema: {
       type: 'object',
       properties: {
@@ -999,6 +1031,10 @@ export class BusinessOwnerController {
           type: 'string',
           format: 'binary',
           description: 'Document file (jpg, png, webp, pdf)',
+        },
+        documentType: {
+          type: 'string',
+          description: 'Document type (pan, aadhar, gst_certificate, etc.)',
         },
       },
       required: ['file'],
@@ -1056,6 +1092,9 @@ export class BusinessOwnerController {
       throw new BadRequestException('No file provided. Please ensure you are sending the file with the key "file" in multipart form data.');
     }
     
-    return this.businessOwnerService.uploadBusinessDocumentForApproval(req.user.userId, file);
+    // Extract document type from request body
+    let documentType = req.body?.documentType;
+    
+    return this.businessOwnerService.uploadBusinessDocumentForApproval(req.user.userId, file, documentType);
   }
 }

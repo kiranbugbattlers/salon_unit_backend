@@ -262,13 +262,13 @@ export class AdminCommissionInfoDto {
   businessOwnerCommission?: number;
 
   @ApiPropertyOptional()
-  customerReward?: number;
+  gstAmount?: number;
 
   @ApiPropertyOptional()
   commissionPercent?: number;
 
   @ApiPropertyOptional()
-  rewardPercent?: number;
+  gstPercent?: number;
 }
 
 // Detailed Booking DTO (includes sensitive data like OTPs)

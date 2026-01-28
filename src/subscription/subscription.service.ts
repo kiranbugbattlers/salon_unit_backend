@@ -193,10 +193,6 @@ export class SubscriptionService {
       throw new NotFoundException('Business not found');
     }
 
-    if (!businessOwner.isApproved) {
-      throw new ForbiddenException('Only approved businesses can subscribe to plans');
-    }
-
     // Check for existing active subscription
     const existingSubscription = await this.businessSubscriptionRepository.findOne({
       where: {
@@ -474,10 +470,6 @@ export class SubscriptionService {
 
     if (!businessOwner) {
       throw new NotFoundException('Business not found');
-    }
-
-    if (!businessOwner.isApproved) {
-      throw new ForbiddenException('Only approved businesses can subscribe to plans');
     }
 
     // Check for existing active subscription

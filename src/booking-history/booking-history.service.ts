@@ -150,10 +150,12 @@ export class BookingHistoryService {
     booking: Booking,
     paymentMethodFilter?: string
   ): Promise<BookingHistoryDto> {
-    // Get customer name
+    // Get customer name and user ID
     let customerName = 'Unknown Customer';
+    let userId = null;
     if (booking.customer) {
       customerName = `${booking.customer.firstName || ''} ${booking.customer.lastName || ''}`.trim() || 'Unknown Customer';
+      userId = booking.customer.userId;
     }
 
     // Get payment method for this booking
@@ -196,10 +198,17 @@ export class BookingHistoryService {
     return {
       bookingId: booking.id,
       customerName,
+      userId,
       bookingAmount: booking.totalAmount,
       paymentMethod,
       bookingDateTime,
       createdAt: booking.createdAt,
     };
+  }
+
+  async findCustomerByUserId(userId: string): Promise<Customer | null> {
+    return this.customerRepository.findOne({
+      where: { userId },
+    });
   }
 }

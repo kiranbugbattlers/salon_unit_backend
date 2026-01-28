@@ -75,23 +75,23 @@ export class CommissionTransaction {
   })
   businessOwnerCommissionAmount: number;
 
-  @ApiProperty({ description: 'Customer reward percentage applied' })
+  @ApiProperty({ description: 'GST percentage applied' })
   @Column({
-    name: 'customer_reward_percent',
+    name: 'gst_percent',
     type: 'decimal',
     precision: 5,
     scale: 2,
   })
-  customerRewardPercent: number;
+  gstPercent: number;
 
-  @ApiProperty({ description: 'Customer reward amount in INR' })
+  @ApiProperty({ description: 'GST amount in INR' })
   @Column({
-    name: 'customer_reward_amount',
+    name: 'gst_amount',
     type: 'decimal',
     precision: 10,
     scale: 2,
   })
-  customerRewardAmount: number;
+  gstAmount: number;
 
   @ApiProperty({ description: 'Business owner wallet transaction ID', required: false })
   @Column({ name: 'business_owner_wallet_transaction_id', type: 'uuid', nullable: true })

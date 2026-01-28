@@ -26,6 +26,7 @@ import { Review } from './review.entity';
 import { BusinessDocument } from './business-document.entity';
 import { BusinessMedia } from './business-media.entity';
 import { VendorDuePayment } from './vendor-due-payment.entity';
+import { BusinessSubscription } from './business-subscription.entity';
 
 @Entity('business_owner')
 export class BusinessOwner {
@@ -162,6 +163,9 @@ export class BusinessOwner {
 
   @OneToMany(() => VendorDuePayment, (duePayment) => duePayment.businessOwner)
   duePayments: VendorDuePayment[];
+
+  @OneToMany(() => BusinessSubscription, (subscription) => subscription.businessOwner)
+  businessSubscriptions: BusinessSubscription[];
 
   @BeforeInsert()
   generateShopId() {

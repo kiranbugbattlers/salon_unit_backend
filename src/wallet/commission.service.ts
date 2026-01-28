@@ -105,18 +105,18 @@ export class CommissionService {
       const servicesCount = booking.bookingServices?.length || 0;
 
       const businessOwnerCommissionPercent = Number(commissionConfig.businessOwnerCommissionPercent);
-      const customerRewardPercent = Number(commissionConfig.customerRewardPercent);
+      const gstPercent = Number(commissionConfig.gstPercent);
 
       // Calculate commission amounts on the full total
       const businessOwnerCommissionAmount = (bookingAmount * businessOwnerCommissionPercent) / 100;
-      const customerRewardAmount = (bookingAmount * customerRewardPercent) / 100;
+      const gstAmount = (bookingAmount * gstPercent) / 100;
 
       // Enhanced logging with breakdown
       this.logger.log(
         `Commission calculation for booking ${bookingId}: ` +
           `Total=₹${bookingAmount} (AddOns=₹${addOnTotal}, Delivery=₹${deliveryCharge}, Services=${servicesCount}), ` +
           `BO Commission=${businessOwnerCommissionPercent}% (₹${businessOwnerCommissionAmount}), ` +
-          `Customer Reward=${customerRewardPercent}% (₹${customerRewardAmount})`,
+          `GST=${gstPercent}% (₹${gstAmount})`,
       );
 
       let businessOwnerWalletTransactionId: string | undefined;
@@ -183,38 +183,26 @@ export class CommissionService {
         );
       }
 
-      // Process customer reward (if > 0)
-      if (customerRewardAmount > 0) {
-        const customerWallet = await this.walletService.getOrCreateWallet(
-          booking.customer.userId,
-          WalletUserType.CUSTOMER,
-        );
-
-        // Credit reward to customer wallet
-        const customerTransaction = await this.walletService.credit(
-          customerWallet.id,
-          WalletTransactionCategory.REWARD_POINTS,
-          customerRewardAmount,
-          `Reward for booking #${bookingId.substring(0, 8)} - ${customerRewardPercent}% of ₹${bookingAmount}`,
+      // Process GST (if > 0) - GST is collected from business owner
+      if (gstAmount > 0) {
+        // Debit GST from business owner wallet (GST to be paid to government)
+        const gstTransaction = await this.walletService.debit(
+          businessOwnerWallet.id,
+          WalletTransactionCategory.COMMISSION,
+          gstAmount,
+          `GST collected for booking #${bookingId.substring(0, 8)} - ${gstPercent}% of ₹${bookingAmount}`,
           {
             bookingId,
             paymentId: payment?.id,
             additionalData: {
               bookingAmount,
-              rewardPercent: customerRewardPercent,
+              gstPercent,
               paymentMethod,
             },
           },
         );
 
-        customerWalletTransactionId = customerTransaction.id;
-
-        // Update customer reward points
-        await this.updateCustomerRewardPoints(
-          booking.customerId,
-          customerRewardAmount,
-          transactionalEntityManager,
-        );
+        customerWalletTransactionId = gstTransaction.id; // Reuse this field for GST transaction ID
       }
 
       // Create commission transaction record
@@ -227,8 +215,8 @@ export class CommissionService {
         bookingAmount,
         businessOwnerCommissionPercent,
         businessOwnerCommissionAmount,
-        customerRewardPercent,
-        customerRewardAmount,
+        gstPercent,
+        gstAmount,
         businessOwnerWalletTransactionId,
         customerWalletTransactionId,
         status: CommissionTransactionStatus.APPLIED,
@@ -263,7 +251,7 @@ export class CommissionService {
 
       this.logger.log(
         `✅ Commission applied for booking ${bookingId}: ` +
-          `BO: -₹${businessOwnerCommissionAmount}, Customer: +₹${customerRewardAmount}`,
+          `BO: -₹${businessOwnerCommissionAmount}, GST: -₹${gstAmount}`,
       );
 
       return savedCommission;
@@ -339,27 +327,12 @@ export class CommissionService {
         );
       }
 
-      // Reverse customer wallet transaction
+      // Reverse GST wallet transaction
       if (commissionTransaction.customerWalletTransactionId) {
         await this.walletService.reverseTransaction(
           commissionTransaction.customerWalletTransactionId,
-          `Reward reversal: ${reason}`,
+          `GST reversal: ${reason}`,
         );
-
-        // Deduct reward points
-        const rewardPoints = await transactionalEntityManager.findOne(CustomerRewardPoints, {
-          where: { customerId: commissionTransaction.customerId },
-        });
-
-        if (rewardPoints) {
-          rewardPoints.totalPoints = Math.max(
-            0,
-            Number(rewardPoints.totalPoints) - commissionTransaction.customerRewardAmount,
-          );
-          rewardPoints.totalBookings = Math.max(0, rewardPoints.totalBookings - 1);
-          rewardPoints.tier = this.calculateTier(rewardPoints.totalBookings);
-          await transactionalEntityManager.save(CustomerRewardPoints, rewardPoints);
-        }
       }
 
       // Mark commission transaction as reversed
@@ -388,6 +361,10 @@ export class CommissionService {
     gstAmount: number;
     totalDeduction: number;
   }> {
+    // Get active commission config for GST rate
+    const activeConfig = await this.getActiveCommissionConfig();
+    const gstPercent = activeConfig.gstPercent || 18; // Default to 18% if not set
+
     const queryBuilder = this.commissionTransactionRepository
       .createQueryBuilder('ct')
       .where('ct.businessOwnerId = :businessOwnerId', { businessOwnerId })
@@ -441,7 +418,8 @@ export class CommissionService {
       paymentMethodBreakdown.find(p => p.paymentMethod === 'online')?.amount || '0'
     );
 
-    const gstAmount = (totalCommissionPaid * 18) / 100;
+    // Use GST rate from active config instead of hardcoded 18%
+    const gstAmount = (totalCommissionPaid * gstPercent) / 100;
     const totalDeduction = totalCommissionPaid + gstAmount;
     const netEarnings = totalBookingAmount - totalDeduction;
 
@@ -535,7 +513,7 @@ export class CommissionService {
    */
   async createCommissionConfig(
     businessOwnerCommissionPercent: number,
-    customerRewardPercent: number,
+    gstPercent: number,
     effectiveFrom: Date,
     createdByAdminId: string,
     notes?: string,
@@ -545,8 +523,8 @@ export class CommissionService {
       throw new BadRequestException('Business owner commission percent must be between 0 and 100');
     }
 
-    if (customerRewardPercent < 0 || customerRewardPercent > 100) {
-      throw new BadRequestException('Customer reward percent must be between 0 and 100');
+    if (gstPercent < 0 || gstPercent > 100) {
+      throw new BadRequestException('GST percent must be between 0 and 100');
     }
 
     // Deactivate previous configs with overlapping dates
@@ -564,7 +542,7 @@ export class CommissionService {
     // Create new config
     const config = this.commissionConfigRepository.create({
       businessOwnerCommissionPercent,
-      customerRewardPercent,
+      gstPercent,
       effectiveFrom,
       isActive: true,
       createdByAdminId,
@@ -574,10 +552,30 @@ export class CommissionService {
     const savedConfig = await this.commissionConfigRepository.save(config);
 
     this.logger.log(
-      `New commission config created: BO=${businessOwnerCommissionPercent}%, Customer=${customerRewardPercent}%, Effective from ${effectiveFrom.toISOString()}`,
+      `New commission config created: BO=${businessOwnerCommissionPercent}%, GST=${gstPercent}%, Effective from ${effectiveFrom.toISOString()}`,
     );
 
     return savedConfig;
+  }
+
+  /**
+   * Get all commission configurations with pagination and filtering
+   */
+  async getAllCommissionConfigs(
+    page: number = 1,
+    limit: number = 20,
+    where: any = {}
+  ): Promise<[CommissionConfig[], number]> {
+    const skip = (page - 1) * limit;
+
+    return await this.commissionConfigRepository.findAndCount({
+      where,
+      skip,
+      take: limit,
+      order: {
+        effectiveFrom: 'DESC',
+      },
+    });
   }
 
   /**

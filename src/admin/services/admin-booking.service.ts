@@ -565,9 +565,9 @@ export class AdminBookingService {
       commissionInfo = {
         commissionTransactionId: commission.id,
         businessOwnerCommission: commission.businessOwnerCommissionAmount,
-        customerReward: commission.customerRewardAmount,
+        gstAmount: commission.gstAmount,
         commissionPercent: commission.businessOwnerCommissionPercent,
-        rewardPercent: commission.customerRewardPercent,
+        gstPercent: commission.gstPercent,
       };
     }
 

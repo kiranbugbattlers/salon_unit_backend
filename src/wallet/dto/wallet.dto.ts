@@ -143,10 +143,10 @@ export class CreateCommissionConfigDto {
   @Min(0)
   businessOwnerCommissionPercent: number;
 
-  @ApiProperty({ description: 'Customer reward percentage (0-100)', example: 1 })
+  @ApiProperty({ description: 'GST percentage (0-100)', example: 18 })
   @IsNumber()
   @Min(0)
-  customerRewardPercent: number;
+  gstPercent: number;
 
   @ApiProperty({ description: 'Date from which this config is effective', example: '2025-01-01' })
   @IsDateString()
@@ -166,7 +166,7 @@ export class CommissionConfigResponseDto {
   businessOwnerCommissionPercent: number;
 
   @ApiProperty()
-  customerRewardPercent: number;
+  gstPercent: number;
 
   @ApiProperty()
   isActive: boolean;
