@@ -10,3 +10,5 @@ export * from './create-agent.dto';
 export * from './update-agent.dto';
 export * from './agent-response.dto';
 export * from './google-signin.dto';
+export * from './update-admin-profile.dto';
+export * from './update-admin-profile-response.dto';

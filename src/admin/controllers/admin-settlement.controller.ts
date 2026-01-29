@@ -120,4 +120,41 @@ export class AdminSettlementController {
   async generateSettlements(@Body() body: { date: string }) {
     return this.dailySettlementService.generateDailySettlements(body.date);
   }
+
+  @Post('generate-with-carry-over')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Generate daily settlements with automatic carry-over',
+    description: 'Generate settlements for all vendors with automatic carry-over of unpaid amounts from previous days',
+  })
+  @ApiResponse({ status: 200, description: 'Settlements generated with carry-over' })
+  async generateSettlementsWithCarryOver(@Body() body: { date: string }) {
+    return this.dailySettlementService.generateDailySettlementsWithCarryOver(body.date);
+  }
+
+  @Get('carry-over-report')
+  @ApiOperation({
+    summary: 'Get settlement report with carry-over information',
+    description: 'Get detailed settlement report including carried forward amounts from unpaid previous days',
+  })
+  @ApiResponse({ status: 200, description: 'Settlement report with carry-over details' })
+  async getSettlementWithCarryOverReport(
+    @Query('businessOwnerId') businessOwnerId: string,
+    @Query('date') date: string,
+  ) {
+    return this.dailySettlementService.getSettlementWithCarryOverReport(businessOwnerId, date);
+  }
+
+  @Get('carried-forward-amount')
+  @ApiOperation({
+    summary: 'Get carried forward amount for a business owner',
+    description: 'Get total unpaid amount carried forward from previous days for a specific business owner',
+  })
+  @ApiResponse({ status: 200, description: 'Carried forward amount details' })
+  async getCarriedForwardAmount(
+    @Query('businessOwnerId') businessOwnerId: string,
+    @Query('date') date: string,
+  ) {
+    return this.dailySettlementService.getCarriedForwardAmount(businessOwnerId, new Date(date));
+  }
 }

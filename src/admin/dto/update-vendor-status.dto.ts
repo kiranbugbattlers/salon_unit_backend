@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum } from 'class-validator';
+import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
 import { VendorStatus } from '../../common/enums/vendor-status.enum';
 
 export class UpdateVendorStatusDto {
@@ -10,4 +10,15 @@ export class UpdateVendorStatusDto {
   })
   @IsEnum(VendorStatus)
   vendorStatus: VendorStatus;
+
+  @ApiProperty({
+    description: 'Optional remarks for the status change',
+    example: 'Business owner verified and approved for active status',
+    required: false,
+    maxLength: 500,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  remarks?: string;
 }

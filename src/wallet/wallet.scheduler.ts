@@ -3,6 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { SettlementService } from './settlement.service';
 import { RewardPointsService } from './reward-points.service';
 import { DailyPayoutService } from './daily-payout.service';
+import { DailySettlementService } from './daily-settlement.service';
 
 @Injectable()
 export class WalletScheduler {
@@ -12,6 +13,7 @@ export class WalletScheduler {
     private readonly settlementService: SettlementService,
     private readonly rewardPointsService: RewardPointsService,
     private readonly dailyPayoutService: DailyPayoutService,
+    private readonly dailySettlementService: DailySettlementService,
   ) {}
 
   /**
@@ -221,6 +223,41 @@ export class WalletScheduler {
       }
     } catch (error) {
       this.logger.error(`❌ Settlement reminder failed: ${error.message}`, error.stack);
+    }
+  }
+
+  /**
+   * Generate daily settlements with automatic carry-over at 12:30 AM daily
+   * This runs before other daily processes to ensure carry-over amounts are included
+   * Cron: 30 0 * * * (30 minutes past midnight, every day)
+   */
+  @Cron('30 0 * * *')
+  async generateDailySettlementsWithCarryOver() {
+    this.logger.log('🔄 Starting daily settlement generation with carry-over...');
+
+    try {
+      // Generate settlements for yesterday (since this runs after midnight)
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const dateString = yesterday.toISOString().split('T')[0];
+
+      const result = await this.dailySettlementService.generateDailySettlementsWithCarryOver(dateString);
+
+      this.logger.log(
+        `✅ Daily settlements with carry-over completed for ${dateString} | ` +
+        `Generated: ${result.generated} | Updated: ${result.updated} | ` +
+        `Total Carried Forward: ₹${result.totalCarriedForward.toFixed(2)}`
+      );
+
+      // Log additional details about carry-over
+      if (result.totalCarriedForward > 0) {
+        this.logger.warn(
+          `⚠️ ₹${result.totalCarriedForward.toFixed(2)} carried forward from previous unpaid days. ` +
+          'Admin should review and process pending settlements.'
+        );
+      }
+    } catch (error) {
+      this.logger.error(`❌ Daily settlement generation with carry-over failed: ${error.message}`, error.stack);
     }
   }
 }

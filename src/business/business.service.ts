@@ -44,6 +44,7 @@ import {
   TimeSlotDto,
 } from './dto';
 import { ServicePackageResponseDto } from '../business-owner/dto';
+import { VendorStatus } from '../common/enums/vendor-status.enum';
 
 interface SortConfig {
   field: BusinessSortField;
@@ -203,7 +204,7 @@ export class BusinessService {
 
       // Find business by shopId with all related data
       const businessOwner = await this.businessOwnerRepository.findOne({
-        where: { shopId, isApproved: true, isDefaulter: false },
+        where: { shopId, isApproved: true, isDefaulter: false, vendorStatus: VendorStatus.ACTIVE },
         relations: [
           'addresses',
           'businessServices',
@@ -442,7 +443,7 @@ export class BusinessService {
     try {
       // Validate business exists and is approved
       const businessOwner = await this.businessOwnerRepository.findOne({
-        where: { shopId, isApproved: true, isDefaulter: false },
+        where: { shopId, isApproved: true, isDefaulter: false, vendorStatus: VendorStatus.ACTIVE },
       });
 
       if (!businessOwner) {
@@ -534,6 +535,7 @@ export class BusinessService {
       .leftJoinAndSelect('service.category', 'category')
       .where('businessOwner.isApproved = :isApproved', { isApproved: true })
       .andWhere('businessOwner.isDefaulter = :isDefaulter', { isDefaulter: false })
+      .andWhere('businessOwner.vendorStatus = :vendorStatus', { vendorStatus: VendorStatus.ACTIVE })
       .andWhere('businessService.isActive = :isActive', { isActive: true })
       .andWhere('service.isActive = :serviceIsActive', { serviceIsActive: true });
   }

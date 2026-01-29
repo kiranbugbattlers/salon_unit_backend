@@ -12,12 +12,12 @@ ADD COLUMN IF NOT EXISTS credit_limit DECIMAL(12,2) DEFAULT 0;
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'vendor_status_enum') THEN
-        CREATE TYPE vendor_status_enum AS ENUM ('HOLD_ACCOUNT', 'ACTIVE', 'SUSPENDED', 'DEACTIVATED');
+        CREATE TYPE vendor_status_enum AS ENUM ('ACTIVE', 'INACTIVE', 'SUSPENDED');
     END IF;
 END $$;
 
 ALTER TABLE business_owner 
-ADD COLUMN IF NOT EXISTS vendor_status vendor_status_enum DEFAULT 'HOLD_ACCOUNT';
+ADD COLUMN IF NOT EXISTS vendor_status vendor_status_enum DEFAULT 'ACTIVE';
 
 -- Add updated_at column if it doesn't exist
 ALTER TABLE business_owner 

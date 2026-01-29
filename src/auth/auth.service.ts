@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   BadRequestException,
   ConflictException,
+  NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -73,6 +74,8 @@ import {
   AgentDto,
   AgentListResponseDto,
   AgentCreateResponseDto,
+  UpdateAdminProfileDto,
+  UpdateAdminProfileResponseDto,
 } from './dto';
 import { SendOtpResponseDto, VerifyOtpResponseDto, ApiResponseDto } from '../common/dto/api-response.dto';
 
@@ -1397,6 +1400,93 @@ export class AuthService {
 
     // Delete business owner record
     await queryRunner.manager.delete(BusinessOwner, { id: businessOwnerId });
+  }
+
+  async updateAdminProfile(adminId: string, updateData: UpdateAdminProfileDto): Promise<UpdateAdminProfileResponseDto> {
+    const admin = await this.adminRepository.findOne({
+      where: { id: adminId },
+    });
+
+    if (!admin) {
+      throw new NotFoundException('Admin not found');
+    }
+
+    // Check if username is being updated and if it's unique
+    if (updateData.username && updateData.username !== admin.username) {
+      const existingAdmin = await this.adminRepository.findOne({
+        where: { username: updateData.username },
+      });
+      
+      if (existingAdmin) {
+        throw new ConflictException('Username already exists');
+      }
+    }
+
+    // Check if email is being updated and if it's unique
+    if (updateData.email && updateData.email !== admin.email) {
+      const existingAdmin = await this.adminRepository.findOne({
+        where: { email: updateData.email },
+      });
+      
+      if (existingAdmin) {
+        throw new ConflictException('Email already exists');
+      }
+    }
+
+    // Update admin fields - allow updating all fields
+    Object.assign(admin, {
+      username: updateData.username ?? admin.username,
+      firstName: updateData.firstName ?? admin.firstName,
+      lastName: updateData.lastName ?? admin.lastName,
+      email: updateData.email ?? admin.email,
+      isActive: updateData.isActive !== undefined ? updateData.isActive : admin.isActive,
+    });
+
+    const updatedAdmin = await this.adminRepository.save(admin);
+
+    // Build response data with all admin details
+    const profileData = {
+      id: updatedAdmin.id,
+      username: updatedAdmin.username,
+      firstName: updatedAdmin.firstName,
+      lastName: updatedAdmin.lastName,
+      email: updatedAdmin.email,
+      fullName: updatedAdmin.fullName,
+      isActive: updatedAdmin.isActive,
+      lastLogin: updatedAdmin.lastLogin,
+      type: 'admin',
+    };
+
+    return new UpdateAdminProfileResponseDto(
+      200,
+      true,
+      'Admin profile updated successfully',
+      profileData
+    );
+  }
+
+  async getAdminProfile(adminId: string): Promise<any> {
+    const admin = await this.adminRepository.findOne({
+      where: { id: adminId },
+    });
+
+    if (!admin) {
+      throw new NotFoundException('Admin not found');
+    }
+
+    const profileData = {
+      id: admin.id,
+      username: admin.username,
+      firstName: admin.firstName,
+      lastName: admin.lastName,
+      email: admin.email,
+      fullName: admin.fullName,
+      isActive: admin.isActive,
+      lastLogin: admin.lastLogin,
+      type: 'admin',
+    };
+
+    return profileData;
   }
 
   private buildAgentDto(agent: Agent): AgentDto {

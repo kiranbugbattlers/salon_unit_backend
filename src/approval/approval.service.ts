@@ -406,13 +406,13 @@ export class ApprovalService {
 
     await this.approvalRepository.save(approval);
 
-    // Update business owner vendor status to HOLD_ACCOUNT when rejected
+    // Update business owner vendor status to INACTIVE when rejected
     const businessOwner = await this.businessOwnerRepository.findOne({
       where: { id: approval.businessOwnerId },
     });
 
     if (businessOwner) {
-      businessOwner.vendorStatus = VendorStatus.HOLD_ACCOUNT;
+      businessOwner.vendorStatus = VendorStatus.INACTIVE;
       await this.businessOwnerRepository.save(businessOwner);
     }
 
@@ -432,7 +432,7 @@ export class ApprovalService {
       );
     }
 
-    return new ApiResponseDto(200, true, 'Business rejected successfully and vendor status set to HOLD_ACCOUNT', null);
+    return new ApiResponseDto(200, true, 'Business rejected successfully and vendor status set to INACTIVE', null);
   }
 
   /**
@@ -883,8 +883,8 @@ export class ApprovalService {
     approval.reviewedAt = new Date();
     await this.approvalRepository.save(approval);
 
-    // Update business owner vendor status to HOLD_ACCOUNT when rejected
-    businessOwner.vendorStatus = VendorStatus.HOLD_ACCOUNT;
+    // Update business owner vendor status to INACTIVE when rejected
+    businessOwner.vendorStatus = VendorStatus.INACTIVE;
     await this.businessOwnerRepository.save(businessOwner);
 
     // Send rejection notification
@@ -896,7 +896,7 @@ export class ApprovalService {
       rejectDto.rejectionReason,
     );
 
-    return new ApiResponseDto(200, true, 'Business rejected successfully and vendor status set to HOLD_ACCOUNT', null);
+    return new ApiResponseDto(200, true, 'Business rejected successfully and vendor status set to INACTIVE', null);
   }
 
   private createPaginationMeta(page: number, limit: number, totalItems: number): PaginationMetaDto {
@@ -1070,11 +1070,9 @@ export class ApprovalService {
       
       // Map string to enum
       const statusMap: { [key: string]: VendorStatus } = {
-        'hold_account': VendorStatus.HOLD_ACCOUNT,
         'active': VendorStatus.ACTIVE,
         'inactive': VendorStatus.INACTIVE,
         'suspended': VendorStatus.SUSPENDED,
-        'services_hidden': VendorStatus.SERVICES_HIDDEN,
       };
       
       if (statusMap[statusString]) {

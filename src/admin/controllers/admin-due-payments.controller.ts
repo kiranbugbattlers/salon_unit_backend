@@ -73,6 +73,9 @@ export class AdminDuePaymentsController {
     @Query('sortBy') sortBy: string = 'dueDate',
     @Query('sortOrder') sortOrder: 'ASC' | 'DESC' = 'ASC',
   ): Promise<any> {
+    // Clean up fully paid due payments first
+    await this.cleanupFullyPaidDuePayments();
+
     const whereConditions: any = {};
 
     if (status) whereConditions.status = status;
@@ -128,6 +131,9 @@ export class AdminDuePaymentsController {
     @Query('fromDate') fromDate?: string,
     @Query('toDate') toDate?: string,
   ): Promise<any> {
+    // Clean up fully paid due payments first
+    await this.cleanupFullyPaidDuePayments();
+
     const whereConditions: any = {};
 
     if (businessOwnerId) whereConditions.businessOwnerId = businessOwnerId;
@@ -445,6 +451,16 @@ export class AdminDuePaymentsController {
       const updatedPayment = await this.vendorDuePaymentRepository.save(duePayment);
       this.logger.log(`Successfully updated due payment: ${updatedPayment.id}`);
 
+      // Check if due payment is fully paid and remove from due payment section
+      if (updatedPayment.remainingAmount === 0 && updatedPayment.status === DuePaymentStatus.PAID) {
+        this.logger.log(`Due payment ${updatedPayment.id} is fully paid. Removing business owner from due payment section.`);
+        
+        // Option 1: Delete the due payment record completely
+        await this.vendorDuePaymentRepository.delete({ id: updatedPayment.id });
+        
+        this.logger.log(`Business owner ${updatedPayment.businessOwnerId} removed from due payment section as payment is complete.`);
+      }
+
       // Preserve vendor status - ensure payment updates don't change vendor status
       if (duePayment.businessOwnerId) {
         await this.vendorStatusService.preserveVendorStatusOnPayment(duePayment.businessOwnerId);
@@ -453,13 +469,16 @@ export class AdminDuePaymentsController {
       return {
         code: 200,
         success: true,
-        message: 'Due payment updated successfully',
+        message: updatedPayment.remainingAmount === 0 && updatedPayment.status === DuePaymentStatus.PAID 
+          ? 'Due payment completed and removed from due payment section successfully'
+          : 'Due payment updated successfully',
         data: {
           ...updatedPayment,
           businessName: duePayment.businessOwner?.businessName || 'N/A',
           ownerName: duePayment.businessOwner?.firstName && duePayment.businessOwner?.lastName
             ? `${duePayment.businessOwner.firstName} ${duePayment.businessOwner.lastName}`.trim()
             : duePayment.businessOwner?.businessName || 'N/A',
+          removedFromDuePaymentSection: updatedPayment.remainingAmount === 0 && updatedPayment.status === DuePaymentStatus.PAID,
         },
       };
     } catch (error) {
@@ -498,5 +517,36 @@ export class AdminDuePaymentsController {
         totalRemainingAmount: 0,
       },
     };
+  }
+
+  /**
+   * Clean up fully paid due payments by removing them from the due payment section
+   * This method removes due payments where remainingAmount is 0 and status is 'paid'
+   */
+  private async cleanupFullyPaidDuePayments(): Promise<void> {
+    try {
+      // Find all due payments that are fully paid
+      const fullyPaidPayments = await this.vendorDuePaymentRepository.find({
+        where: {
+          remainingAmount: 0,
+          status: DuePaymentStatus.PAID,
+        },
+      });
+
+      if (fullyPaidPayments.length > 0) {
+        this.logger.log(`Found ${fullyPaidPayments.length} fully paid due payments to clean up`);
+
+        // Delete all fully paid due payments
+        for (const payment of fullyPaidPayments) {
+          await this.vendorDuePaymentRepository.delete({ id: payment.id });
+          this.logger.log(`Removed fully paid due payment ${payment.id} for business owner ${payment.businessOwnerId}`);
+        }
+
+        this.logger.log(`Successfully cleaned up ${fullyPaidPayments.length} fully paid due payments`);
+      }
+    } catch (error) {
+      this.logger.error(`Error cleaning up fully paid due payments: ${error.message}`);
+      // Don't throw error here as this is a cleanup operation
+    }
   }
 }

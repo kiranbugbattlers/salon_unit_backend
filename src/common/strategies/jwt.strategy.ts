@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { User, UserRole, Admin, Agent, Customer, BusinessOwner } from '../../database/entities';
+import { VendorStatus } from '../../common/enums/vendor-status.enum';
 
 export interface JwtPayload {
   sub: string; // user ID, admin ID, or agent ID
@@ -104,6 +105,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const businessOwner = await this.businessOwnerRepository.findOne({
       where: { userId: user.id },
     });
+
+    // Check if business owner is SUSPENDED - if so, deny access
+    if (businessOwner && businessOwner.vendorStatus === VendorStatus.SUSPENDED) {
+      throw new UnauthorizedException('Business owner account is suspended. Please contact admin.');
+    }
 
     return {
       userId: user.id,

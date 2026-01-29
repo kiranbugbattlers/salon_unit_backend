@@ -935,4 +935,244 @@ export class DailySettlementService {
 
     return settlement;
   }
+
+  /**
+   * Get total unpaid amount carried forward for a business owner
+   * This calculates the cumulative due amount from all unpaid previous days
+   */
+  async getCarriedForwardAmount(businessOwnerId: string, currentDate: Date): Promise<{
+    totalCarriedForwardAmount: number;
+    unpaidDaysCount: number;
+    unpaidDays: Array<{ date: Date; amount: number; }>;
+  }> {
+    // Get all unpaid settlements before current date
+    const unpaidSettlements = await this.dailySettlementRepository.find({
+      where: {
+        businessOwnerId,
+        settlementDate: LessThanOrEqual(new Date(currentDate.getTime() - 24 * 60 * 60 * 1000)), // Previous days only
+        paidStatus: SettlementPaidStatus.PENDING,
+      },
+      order: { settlementDate: 'ASC' },
+    });
+
+    const totalCarriedForwardAmount = unpaidSettlements.reduce(
+      (sum, settlement) => sum + Number(settlement.settlementAmount),
+      0
+    );
+
+    const unpaidDays = unpaidSettlements.map(settlement => ({
+      date: settlement.settlementDate,
+      amount: Number(settlement.settlementAmount),
+    }));
+
+    return {
+      totalCarriedForwardAmount,
+      unpaidDaysCount: unpaidSettlements.length,
+      unpaidDays,
+    };
+  }
+
+  /**
+   * Generate daily settlement with automatic carry-over of unpaid amounts
+   * This modifies the settlement generation to include carried forward amounts
+   */
+  async generateDailySettlementsWithCarryOver(date: string): Promise<{ 
+    generated: number; 
+    updated: number; 
+    totalCarriedForward: number; 
+  }> {
+    const targetDate = new Date(date);
+    
+    // Get all approved business owners
+    const approvedBusinessOwners = await this.businessOwnerRepository.find({
+      where: { isApproved: true },
+      relations: ['user', 'addresses'],
+    });
+
+    let generated = 0;
+    let updated = 0;
+    let totalCarriedForward = 0;
+
+    for (const businessOwner of approvedBusinessOwners) {
+      try {
+        // Get carried forward amount from previous unpaid days
+        const carriedForward = await this.getCarriedForwardAmount(businessOwner.id, targetDate);
+        
+        // Generate settlement for current day including carry-over
+        const result = await this.generateSettlementForBusinessOwnerWithCarryOver(
+          businessOwner, 
+          targetDate, 
+          carriedForward.totalCarriedForwardAmount
+        );
+        
+        if (result === 'created') generated++;
+        else if (result === 'updated') updated++;
+        
+        totalCarriedForward += carriedForward.totalCarriedForwardAmount;
+        
+        this.logger.log(
+          `Business ${businessOwner.id}: Carried forward ₹${carriedForward.totalCarriedForwardAmount} from ${carriedForward.unpaidDaysCount} unpaid days`
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to generate settlement with carry-over for business owner ${businessOwner.id}: ${error.message}`,
+        );
+      }
+    }
+
+    this.logger.log(
+      `Daily settlements with carry-over for ${date}: Generated ${generated}, Updated ${updated}, Total carried forward: ₹${totalCarriedForward}`
+    );
+
+    return { generated, updated, totalCarriedForward };
+  }
+
+  /**
+   * Generate settlement for a single business owner with carry-over amounts
+   */
+  private async generateSettlementForBusinessOwnerWithCarryOver(
+    businessOwner: BusinessOwner & { user: User; addresses: BusinessAddress[] },
+    date: Date,
+    carriedForwardAmount: number = 0,
+  ): Promise<'created' | 'updated' | 'skipped'> {
+    // Get completed bookings for this date
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const completedBookings = await this.bookingRepository.find({
+      where: {
+        businessOwnerId: businessOwner.id,
+        status: BookingStatus.COMPLETED,
+        serviceCompletedAt: Between(startOfDay, endOfDay),
+      },
+    });
+
+    // Calculate current day's totals
+    const totalTransactionsCount = completedBookings.length;
+    const totalTransactionsAmount = completedBookings.reduce(
+      (sum, booking) => sum + Number(booking.totalAmount),
+      0,
+    );
+    const totalCashAmount = completedBookings.reduce(
+      (sum, booking) => sum + (booking.paymentMethod === PaymentMethodType.COD ? Number(booking.totalAmount) : 0),
+      0,
+    );
+    const totalOnlineAmount = completedBookings.reduce(
+      (sum, booking) => sum + (booking.paymentMethod === PaymentMethodType.ONLINE ? Number(booking.totalAmount) : 0),
+      0,
+    );
+
+    // Get active commission config
+    const { commissionPercent, gstPercent } = await this.getCommissionConfig(date);
+
+    // Commission calculation for current day
+    const commissionAmount = (totalTransactionsAmount * commissionPercent) / 100;
+    const gstAmount = (commissionAmount * gstPercent) / 100;
+    const totalDeduction = commissionAmount + gstAmount;
+    const currentDaySettlementAmount = totalOnlineAmount - totalDeduction;
+
+    // Total settlement amount includes carried forward amount
+    const totalSettlementAmount = currentDaySettlementAmount + carriedForwardAmount;
+
+    // Get vendor details
+    const ownerName = [businessOwner.firstName, businessOwner.lastName].filter(Boolean).join(' ') || 'N/A';
+    const salonName = businessOwner.businessName || 'N/A';
+    const email = businessOwner.user?.email || '';
+    const mobileNumber = businessOwner.user?.phone || '';
+    
+    const primaryAddress = businessOwner.addresses?.find(a => a.isPrimary) || businessOwner.addresses?.[0];
+    const address = primaryAddress
+      ? [primaryAddress.streetAddress, primaryAddress.city, primaryAddress.state, primaryAddress.postalCode]
+          .filter(Boolean)
+          .join(', ')
+      : 'N/A';
+
+    // Check if settlement already exists
+    const dateString = date.toISOString().split('T')[0];
+    let existing = await this.dailySettlementRepository.findOne({
+      where: {
+        businessOwnerId: businessOwner.id,
+        settlementDate: new Date(dateString),
+      },
+    });
+
+    // Prepare admin notes to include carry-over information
+    let adminNotes = existing?.adminNotes || '';
+    if (carriedForwardAmount > 0) {
+      const carriedForwardInfo = `Carried forward: ₹${carriedForwardAmount} from previous unpaid days`;
+      adminNotes = adminNotes ? `${adminNotes}; ${carriedForwardInfo}` : carriedForwardInfo;
+    }
+
+    if (existing) {
+      // Update existing settlement with carry-over
+      existing.ownerName = ownerName;
+      existing.salonName = salonName;
+      existing.email = email;
+      existing.mobileNumber = mobileNumber;
+      existing.address = address;
+      existing.totalTransactionsCount = totalTransactionsCount;
+      existing.totalTransactionsAmount = totalTransactionsAmount;
+      existing.totalCashAmount = totalCashAmount;
+      existing.totalOnlineAmount = totalOnlineAmount;
+      existing.commissionPercent = commissionPercent;
+      existing.commissionAmount = commissionAmount;
+      existing.gstPercent = gstPercent;
+      existing.gstAmount = gstAmount;
+      existing.totalDeduction = totalDeduction;
+      existing.settlementAmount = totalSettlementAmount; // Includes carry-over
+      existing.adminNotes = adminNotes;
+
+      await this.dailySettlementRepository.save(existing);
+      return 'updated';
+    } else if (totalSettlementAmount > 0 || carriedForwardAmount > 0) {
+      // Create new settlement even if no current day bookings but there's carry-over amount
+      const newSettlement = this.dailySettlementRepository.create({
+        businessOwnerId: businessOwner.id,
+        settlementDate: new Date(dateString),
+        ownerName,
+        salonName,
+        email,
+        mobileNumber,
+        address,
+        totalTransactionsCount,
+        totalTransactionsAmount,
+        totalCashAmount,
+        totalOnlineAmount,
+        commissionPercent: commissionPercent,
+        commissionAmount,
+        gstPercent: gstPercent,
+        gstAmount,
+        totalDeduction,
+        settlementAmount: totalSettlementAmount, // Includes carry-over
+        paidStatus: SettlementPaidStatus.PENDING,
+        adminNotes,
+      });
+
+      await this.dailySettlementRepository.save(newSettlement);
+      return 'created';
+    }
+
+    return 'skipped';
+  }
+
+  /**
+   * Get comprehensive settlement report including carry-over information
+   */
+  async getSettlementWithCarryOverReport(businessOwnerId: string, date: string): Promise<any> {
+    const settlementDetails = await this.getSettlementDetails({ businessOwnerId, date });
+    const carriedForward = await this.getCarriedForwardAmount(businessOwnerId, new Date(date));
+
+    return {
+      ...settlementDetails,
+      carriedForward: {
+        totalAmount: carriedForward.totalCarriedForwardAmount,
+        unpaidDaysCount: carriedForward.unpaidDaysCount,
+        unpaidDays: carriedForward.unpaidDays,
+      },
+      totalSettlementAmount: Number(settlementDetails.settlement.settlementAmount) + carriedForward.totalCarriedForwardAmount,
+    };
+  }
 }

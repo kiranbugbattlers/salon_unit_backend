@@ -34,7 +34,7 @@ export class VendorStatusService {
     businessOwnerId: string, 
     newStatus: VendorStatus,
     remarks?: string
-  ): Promise<BusinessOwner> {
+  ): Promise<{ businessOwner: BusinessOwner; oldStatus: string; newStatus: string }> {
     try {
       const businessOwner = await this.businessOwnerRepository.findOne({
         where: { id: businessOwnerId },
@@ -70,7 +70,11 @@ export class VendorStatusService {
           `from ${oldStatus} to ${businessOwner.vendorStatus}${remarks ? ` - remarks: ${remarks}` : ''}`
         );
 
-        return businessOwner;
+        return {
+          businessOwner,
+          oldStatus,
+          newStatus: businessOwner.vendorStatus
+        };
       } catch (error) {
         console.error('Error updating vendor status:', error.message);
         
@@ -88,7 +92,11 @@ export class VendorStatusService {
               `from ${oldStatus} to ${businessOwner.vendorStatus} (default used due to constraint)${remarks ? ` - remarks: ${remarks}` : ''}`
             );
 
-            return businessOwner;
+            return {
+          businessOwner,
+          oldStatus,
+          newStatus: businessOwner.vendorStatus
+        };
           } catch (retryError1) {
             console.error('Retry with ACTIVE failed:', retryError1.message);
             
@@ -120,14 +128,22 @@ export class VendorStatusService {
                   `from ${oldStatus} to ${businessOwner.vendorStatus} (alternative approach)${remarks ? ` - remarks: ${remarks}` : ''}`
                 );
 
-                return businessOwner;
+                return {
+          businessOwner,
+          oldStatus,
+          newStatus: businessOwner.vendorStatus
+        };
               } catch (statusUpdateError) {
                 console.error('Failed to update vendorStatus separately:', statusUpdateError.message);
                 // Continue without vendorStatus update
                 this.logger.log(
                   `Admin updated business owner ${businessOwnerId} but vendorStatus could not be changed due to database constraint${remarks ? ` - remarks: ${remarks}` : ''}`
                 );
-                return businessOwner;
+                return {
+          businessOwner,
+          oldStatus,
+          newStatus: businessOwner.vendorStatus
+        };
               }
             } catch (retryError2) {
               console.error('Save without vendorStatus failed:', retryError2.message);
@@ -147,7 +163,11 @@ export class VendorStatusService {
                   `from ${oldStatus} to ACTIVE (raw SQL approach)${remarks ? ` - remarks: ${remarks}` : ''}`
                 );
                 
-                return businessOwner;
+                return {
+          businessOwner,
+          oldStatus,
+          newStatus: businessOwner.vendorStatus
+        };
               } catch (rawSqlError) {
                 console.error('Raw SQL update failed:', rawSqlError.message);
                 throw new Error(`Failed to update vendor status. Multiple approaches tried. Last error: ${rawSqlError.message}`);

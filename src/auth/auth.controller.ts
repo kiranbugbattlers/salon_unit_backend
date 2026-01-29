@@ -43,6 +43,8 @@ import {
   AgentListResponseDto,
   AgentCreateResponseDto,
   GoogleSignInDto,
+  UpdateAdminProfileDto,
+  UpdateAdminProfileResponseDto,
 } from './dto';
 import { SendOtpResponseDto, VerifyOtpResponseDto, ApiResponseDto } from '../common/dto/api-response.dto';
 
@@ -171,7 +173,50 @@ export class AuthController {
     description: 'Unauthorized - Invalid or missing JWT token',
   })
   async getProfile(@Req() req) {
-    return req.user;
+    const user = req.user;
+    
+    // If user is admin, fetch detailed admin profile
+    if (user.roles && user.roles.includes('admin')) {
+      const adminProfile = await this.authService.getAdminProfile(user.sub);
+      return adminProfile;
+    }
+    
+    // For other users, return basic profile with the requested fields
+    return {
+      ...user,
+      username: user.username || '',
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      email: user.email || '',
+      fullName: user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+      isActive: user.isActive !== undefined ? user.isActive : true,
+    };
+  }
+
+  @Put('admin/profile')
+  @ApiBearerAuth('JWT')
+  @ApiOperation({
+    summary: 'Update admin profile',
+    description: 'Update admin profile information. Admins can update their username, first name, last name, email, and active status.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Admin profile updated successfully',
+    type: UpdateAdminProfileResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - Invalid input data or username/email already exists',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async updateAdminProfile(
+    @Req() req,
+    @Body() updateData: UpdateAdminProfileDto,
+  ): Promise<UpdateAdminProfileResponseDto> {
+    return this.authService.updateAdminProfile(req.user.id, updateData);
   }
 
   @Post('fcm-token')
